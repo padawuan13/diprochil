@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PLANIFICADOR
+  SUPERVISOR
+  CONDUCTOR
+}
+
+enum VehicleStatus {
+  ACTIVO
+  INACTIVO
+  MANTENCION
+}
+
+enum PedidoEstado {
+  PENDIENTE
+  ENTREGADO
+  NO_ENTREGADO
+}
+
+enum RutaEstado {
+  PROGRAMADA
+  EN_CURSO
+  FINALIZADA
+  CANCELADA
+}
+
+enum ParadaEstado {
+  PENDIENTE
+  EN_CURSO
+  COMPLETADA
+  NO_ENTREGADA
+}
+
+enum IncidenciaEstado {
+  ABIERTA
+  EN_REVISION
+  CERRADA
+}
+
+enum IncidenciaSeveridad {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(PLANIFICADOR)
+  active       Boolean  @default(true)
+
+  routes           Route[]    @relation("UserRoutes")
+  incidentsCreated Incident[] @relation("UserIncidentsCreated")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model Client {
+  id          Int     @id @default(autoincrement())
+  rut         String  @unique
+  razonSocial String
+  comuna      String
+  ciudad      String
+  giro        String?
+  telefono    String?
+  direccion   String?
+  isla        String?
+  active      Boolean @default(true)
+  latitud     Float?  // Latitud
+  longitud    Float?  // Longitud
+
+  pedidos Pedido[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model Vehicle {
+  id            Int           @id @default(autoincrement())
+  patente       String        @unique
+  capacidadKg   Int?
+  tipo          String?
+  estado        VehicleStatus @default(ACTIVO)
+  observaciones String?
+
+  routes Route[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pedido {
+  id              Int          @id @default(autoincrement())
+  clientId        Int
+  fechaSolicitud  DateTime     @default(now())
+  fechaCompromiso DateTime?
+  estado          PedidoEstado @default(PENDIENTE)
+  cajas Int @default(0)
+  comentarios     String?
+
+  client    Client      @relation(fields: [clientId], references: [id])
+  stops     RouteStop[]
+  incidents Incident[]
+  detalles  PedidoDetalle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([estado])
+}
+
+model Route {
+  id             Int        @id @default(autoincrement())
+  conductorId    Int
+  vehicleId      Int
+  fechaRuta      DateTime   @db.Date
+  zona           String?
+  horaInicioProg DateTime?  @db.Time
+  horaFinProg    DateTime?  @db.Time
+  estado         RutaEstado @default(PROGRAMADA)
+
+  conductor User        @relation("UserRoutes", fields: [conductorId], references: [id])
+  vehicle   Vehicle     @relation(fields: [vehicleId], references: [id])
+  stops     RouteStop[]
+  incidents Incident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conductorId])
+  @@index([vehicleId])
+  @@index([fechaRuta])
+  @@index([estado])
+}
+
+model RouteStop {
+  id           Int          @id @default(autoincrement())
+  routeId      Int
+  pedidoId     Int
+  ordenVisita  Int
+  horaEstimada DateTime?    @db.Time
+  ventanaDesde DateTime?    @db.Time
+  ventanaHasta DateTime?    @db.Time
+  estadoParada ParadaEstado @default(PENDIENTE)
+
+  route  Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pedido Pedido @relation(fields: [pedidoId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([routeId, ordenVisita])
+  @@index([routeId])
+  @@index([pedidoId])
+}
+
+model Incident {
+  id          Int                 @id @default(autoincrement())
+  routeId     Int
+  pedidoId    Int?
+  createdById Int? // quien registra (conductor/supervisor)
+  tipo        String
+  descripcion String
+  fechaHora   DateTime            @default(now())
+  severidad   IncidenciaSeveridad @default(MEDIA)
+  estado      IncidenciaEstado    @default(ABIERTA)
+
+  route     Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pedido    Pedido? @relation(fields: [pedidoId], references: [id])
+  createdBy User?   @relation("UserIncidentsCreated", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([routeId])
+  @@index([pedidoId])
+  @@index([estado])
+}
+
+model PedidoDetalle {
+  id          Int    @id @default(autoincrement())
+  pedidoId    Int
+  producto    String
+  descripcion String
+  cantidad    Int
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([pedidoId])
+}
+
+

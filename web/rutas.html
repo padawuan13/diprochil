@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIPROCHIL - Rutas</title>
+  
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <img src="assets/images/logo-diprochil.png" alt="DIPROCHIL">
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <a href="dashboard.html" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section" id="nav-gestion">
+          <div class="nav-section-title">Gestión</div>
+          <a href="clientes.html" class="nav-link">
+            <span class="nav-link-icon">👥</span>
+            <span>Clientes</span>
+          </a>
+          <a href="pedidos.html" class="nav-link">
+            <span class="nav-link-icon">📦</span>
+            <span>Pedidos</span>
+          </a>
+          <a href="rutas.html" class="nav-link active">
+            <span class="nav-link-icon">🚚</span>
+            <span>Rutas</span>
+          </a>
+          <a href="vehiculos.html" class="nav-link">
+            <span class="nav-link-icon">🚐</span>
+            <span>Vehículos</span>
+          </a>
+                  <a href="incidencias.html" class="nav-link">
+          <span class="nav-link-icon">⚠️</span>
+          <span>Incidencias</span>
+          </a>
+</div>
+
+        <div class="nav-section" id="nav-admin">
+          <div class="nav-section-title">Administración</div>
+          <a href="usuarios.html" class="nav-link">
+            <span class="nav-link-icon">👤</span>
+            <span>Usuarios</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-danger btn-block btn-sm" id="logoutBtn">
+          Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <header class="app-header">
+        <div class="header-left">
+          <button class="hamburger" id="hamburgerBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <h1 class="header-title">Gestión de Rutas</h1>
+        </div>
+        <div class="header-right">
+          <div class="header-user">
+            <div class="header-user-info">
+              <div class="header-user-name" id="userName">Usuario</div>
+              <div class="header-user-role" id="userRole">Rol</div>
+            </div>
+            <div class="header-user-avatar" id="userAvatar">U</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-wrapper">
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box">
+              <input 
+                type="text" 
+                class="form-input search-input" 
+                id="searchInput"
+                placeholder="Buscar ruta..."
+              >
+            </div>
+            <select class="form-select" id="filterEstado" style="width: 200px;">
+              <option value="PROGRAMADA" selected>Programada</option>
+              <option value="EN_CURSO">En Curso</option>
+              <option value="FINALIZADA">Finalizada</option>
+              <option value="CANCELADA">Cancelada</option>
+              <option value="">Todos los estados</option>
+            </select>
+          </div>
+          
+          <div class="toolbar-right">
+            <!-- NUEVO: Botón exportar -->
+            <button 
+              class="btn btn-success" 
+              onclick="ExportarExcel.exportarRutas()"
+              style="margin-right: 12px;"
+              title="Exportar todas las rutas a Excel"
+            >
+              📥 Exportar Excel
+            </button>
+</div>
+        </div>
+
+        <!-- TABLA DE RUTAS -->
+        <div class="card">
+          <div class="card-body">
+            <div id="rutasTableContainer">
+              <p class="text-center text-muted">Cargando rutas...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- JAVASCRIPT -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/rutas.js"></script>
+
+  <!-- NUEVO: SheetJS + Exportar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="js/exportar-excel.js"></script>
+
+  <script>
+    // Proteger página
+    Auth.requireAuth([CONFIG.ROLES.ADMIN, CONFIG.ROLES.PLANIFICADOR, CONFIG.ROLES.SUPERVISOR]);
+
+    // Mostrar usuario en header
+    const user = Auth.getUser();
+    document.getElementById('userName').textContent = user?.nombre || 'Usuario';
+    document.getElementById('userRole').textContent = user?.role || 'Sin rol';
+    document.getElementById('userAvatar').textContent = user?.nombre?.charAt(0).toUpperCase() || 'U';
+
+    // Mostrar/ocultar menú según rol
+    const userRole = user?.role;
+    if (userRole !== CONFIG.ROLES.ADMIN) {
+      document.getElementById('nav-admin').style.display = 'none';
+    }
+
+    // Hamburger menu
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    hamburgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+      hamburgerBtn.classList.toggle('open');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+      hamburgerBtn.classList.remove('open');
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        Auth.logout();
+      }
+    });
+
+    // Inicializar módulo de rutas
+    Rutas.init();
+  </script>
+
+</body>
+</html>
