@@ -321,7 +321,7 @@ Este proyecto es privado y pertenece a DIPROCHIL.
 
 ## 👨‍💻 Autor
 
-Felipe - Proyecto de Título 2025
+Felipe Hernández - Proyecto de Título 2025
 
 ## 🐛 Reporte de Bugs
 
