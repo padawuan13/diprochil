@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { exportPedidos, exportRutas } from "./exports.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireRoles } from "../../middlewares/role.middleware";
+import { requireRoles } from "../../middlewares/roles.middleware";
 
 const router = Router();
 
