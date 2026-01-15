@@ -2,8 +2,19 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../lib/prisma";
 
-export async function login(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } });
+export async function login(emailOrIdentifier: string, password: string) {
+  let user;
+  const normalized = emailOrIdentifier.toLowerCase().trim();
+
+  if (normalized.includes("@")) {
+    user = await prisma.user.findUnique({ where: { email: normalized } });
+  } else {
+    user = await prisma.user.findFirst({
+      where: {
+        email: { startsWith: normalized + "@" }
+      }
+    });
+  }
 
   if (!user || !user.active) {
     return null;

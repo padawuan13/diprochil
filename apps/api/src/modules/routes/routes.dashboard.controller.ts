@@ -7,6 +7,8 @@ export async function handleRouteDashboard(req: Request, res: Response) {
     return res.status(400).json({ ok: false, message: "Invalid route id" });
   }
 
+  const user = (req as any).user as { id: number; role: string } | undefined;
+
   const route = await prisma.route.findUnique({
     where: { id: routeId },
     include: {
@@ -34,7 +36,10 @@ export async function handleRouteDashboard(req: Request, res: Response) {
     return res.status(404).json({ ok: false, message: "Route not found" });
   }
 
-  // Resumen de paradas
+  if (user?.role === "CONDUCTOR" && route.conductorId !== user.id) {
+    return res.status(403).json({ ok: false, message: "No tienes acceso a esta ruta" });
+  }
+
   const stopCounts = {
     PENDIENTE: 0,
     EN_CURSO: 0,
@@ -46,7 +51,6 @@ export async function handleRouteDashboard(req: Request, res: Response) {
     stopCounts[s.estadoParada] = (stopCounts[s.estadoParada] ?? 0) + 1;
   }
 
-  // Resumen de incidencias
   const incidentCounts = {
     ABIERTA: 0,
     CERRADA: 0,
@@ -56,7 +60,6 @@ export async function handleRouteDashboard(req: Request, res: Response) {
     incidentCounts[i.estado] = (incidentCounts[i.estado] ?? 0) + 1;
   }
 
-  // Total cajas (sumatoria de pedidos asignados en stops)
   const totalCajas = route.stops.reduce((acc, s) => acc + (s.pedido?.cajas ?? 0), 0);
 
   return res.json({

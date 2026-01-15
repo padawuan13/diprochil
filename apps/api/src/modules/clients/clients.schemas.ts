@@ -10,8 +10,8 @@ export const createClientSchema = z.object({
   direccion: z.string().max(200).optional(),
   isla: z.string().max(100).optional(),
   active: z.boolean().optional(),
-  latitud: z.number().optional(),   // ← AGREGADO
-  longitud: z.number().optional(),  // ← AGREGADO
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
 });
 
 export const listClientsQuerySchema = z.object({
@@ -42,6 +42,6 @@ export const updateClientSchema = z.object({
   direccion: z.string().optional(),
   isla: z.string().optional(),
   active: z.boolean().optional(),
-  latitud: z.number().optional(),   // ← AGREGADO
-  longitud: z.number().optional(),  // ← AGREGADO
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
 });

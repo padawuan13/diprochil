@@ -53,12 +53,6 @@ enum IncidenciaEstado {
   CERRADA
 }
 
-enum IncidenciaSeveridad {
-  BAJA
-  MEDIA
-  ALTA
-  CRITICA
-}
 
 model User {
   id           Int      @id @default(autoincrement())
@@ -68,10 +62,11 @@ model User {
   role         UserRole @default(PLANIFICADOR)
   active       Boolean  @default(true)
 
-  routes           Route[]    @relation("UserRoutes")
-  incidentsCreated Incident[] @relation("UserIncidentsCreated")
+  routes            Route[]    @relation("UserRoutes")
+  incidentsCreated  Incident[] @relation("UserIncidentsCreated")
+  incidentsReviewed Incident[] @relation("UserIncidentsReviewed")
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
 
@@ -176,19 +171,25 @@ model RouteStop {
 }
 
 model Incident {
-  id          Int                 @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   routeId     Int
   pedidoId    Int?
-  createdById Int? // quien registra (conductor/supervisor)
+  createdById Int?             // quien registra (conductor)
+  reviewedById Int?            // quien revisa (supervisor/admin)
   tipo        String
   descripcion String
-  fechaHora   DateTime            @default(now())
-  severidad   IncidenciaSeveridad @default(MEDIA)
-  estado      IncidenciaEstado    @default(ABIERTA)
+  fechaHora   DateTime         @default(now())
+  estado      IncidenciaEstado @default(ABIERTA)
 
-  route     Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  pedido    Pedido? @relation(fields: [pedidoId], references: [id])
-  createdBy User?   @relation("UserIncidentsCreated", fields: [createdById], references: [id])
+  // Campos para el flujo de resolución
+  comentarioResolucion String?  // Decisión/comentario final del revisor
+  fechaRevision        DateTime? // Cuando pasó a EN_REVISION
+  fechaCierre          DateTime? // Cuando se cerró
+
+  route      Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pedido     Pedido? @relation(fields: [pedidoId], references: [id])
+  createdBy  User?   @relation("UserIncidentsCreated", fields: [createdById], references: [id])
+  reviewedBy User?   @relation("UserIncidentsReviewed", fields: [reviewedById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -196,6 +197,7 @@ model Incident {
   @@index([routeId])
   @@index([pedidoId])
   @@index([estado])
+  @@index([createdById])
 }
 
 model PedidoDetalle {

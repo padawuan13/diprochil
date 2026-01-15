@@ -35,14 +35,14 @@
       <!-- FORMULARIO DE LOGIN -->
       <form id="loginForm">
         
-        <!-- EMAIL -->
+        <!-- USUARIO O CORREO -->
         <div class="form-group">
-          <label for="email" class="form-label required">Correo Electrónico</label>
-          <input 
-            type="email" 
-            id="email" 
-            class="form-input" 
-            placeholder="tucorreo@ejemplo.com"
+          <label for="email" class="form-label required">Usuario o Correo</label>
+          <input
+            type="text"
+            id="email"
+            class="form-input"
+            placeholder="usuario o correo@ejemplo.com"
             autocomplete="email"
             required
           >
@@ -95,12 +95,10 @@
        LÓGICA DEL LOGIN
        ======================================== */
 
-    // Si ya está autenticado, redirigir al dashboard
     if (Auth.isAuthenticated()) {
       Auth.redirectToDashboard();
     }
 
-    // Manejar submit del formulario
     const loginForm = document.getElementById('loginForm');
     const loginBtn = document.getElementById('loginBtn');
     const messageContainer = document.getElementById('message-container');
@@ -108,23 +106,15 @@
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Limpiar mensajes previos
       messageContainer.innerHTML = '';
       UI.clearFieldError('email');
       UI.clearFieldError('password');
 
-      // Obtener valores
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
 
-      // Validaciones básicas
       if (!email) {
-        UI.showFieldError('email', 'El correo es requerido');
-        return;
-      }
-
-      if (!UI.validateEmail(email)) {
-        UI.showFieldError('email', 'El correo no es válido');
+        UI.showFieldError('email', 'El correo o identificador es requerido');
         return;
       }
 
@@ -138,39 +128,34 @@
         return;
       }
 
-      // Mostrar loading en botón
       UI.setButtonLoading(loginBtn, true);
 
       try {
-        // Llamar al API de login
-        const response = await Auth.login(email, password);
+        const remember = document.getElementById('remember').checked;
 
-        // Mostrar mensaje de éxito
+        const response = await Auth.login(email, password, remember);
+
         messageContainer.innerHTML = `
           <div class="alert alert-success">
-            ¡Bienvenido! Redirigiendo...
+            ¡Bienvenido! Iniciando sesión...
           </div>
         `;
 
-        // Redirigir según rol después de 1 segundo
         setTimeout(() => {
           Auth.redirectToDashboard();
         }, 1000);
 
       } catch (error) {
-        // Mostrar error
         messageContainer.innerHTML = `
           <div class="alert alert-danger">
             ${error.message || 'Credenciales inválidas. Verifica tu correo y contraseña.'}
           </div>
         `;
 
-        // Quitar loading del botón
         UI.setButtonLoading(loginBtn, false);
       }
     });
 
-    // Limpiar errores al escribir
     document.getElementById('email').addEventListener('input', () => {
       UI.clearFieldError('email');
     });

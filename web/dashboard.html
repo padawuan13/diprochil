@@ -198,37 +198,37 @@
        LÓGICA DEL DASHBOARD
        ======================================== */
 
-    // Proteger página (requiere autenticación)
     Auth.requireAuth();
 
-    // Obtener información del usuario
     const user = Auth.getUser();
     const userRole = user?.role;
 
-    // Mostrar información del usuario en el header
     document.getElementById('userName').textContent = user?.nombre || 'Usuario';
     document.getElementById('userRole').textContent = userRole || 'Sin rol';
     
-    // Avatar con inicial del nombre
     const inicial = user?.nombre ? user.nombre.charAt(0).toUpperCase() : 'U';
     document.getElementById('userAvatar').textContent = inicial;
 
-    // Mostrar/ocultar secciones del menú según rol
     if (userRole === CONFIG.ROLES.CONDUCTOR) {
-      // Conductores no ven secciones de gestión ni admin
       document.getElementById('nav-gestion').style.display = 'none';
       document.getElementById('nav-admin').style.display = 'none';
+
+      const navSection = document.querySelector('.nav-section');
+      if (navSection) {
+        const incidenciasLink = document.createElement('a');
+        incidenciasLink.href = 'incidencias.html';
+        incidenciasLink.className = 'nav-link';
+        incidenciasLink.innerHTML = '<span class="nav-link-icon">⚠️</span><span>Mis Incidencias</span>';
+        navSection.appendChild(incidenciasLink);
+      }
     } else if (userRole === CONFIG.ROLES.ADMIN) {
-      // Admins ven todo
       document.getElementById('nav-gestion').style.display = 'block';
       document.getElementById('nav-admin').style.display = 'block';
     } else {
-      // Planificadores y supervisores ven gestión pero no admin
       document.getElementById('nav-gestion').style.display = 'block';
       document.getElementById('nav-admin').style.display = 'none';
     }
 
-    // Hamburger menu (móvil)
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -245,7 +245,6 @@
       hamburgerBtn.classList.remove('open');
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
         Auth.logout();
@@ -258,7 +257,6 @@
 
     async function loadDashboardData() {
       try {
-        // Cargar estadísticas en paralelo
         const [clientes, pedidos, rutas, vehiculos] = await Promise.all([
           API.get(CONFIG.ENDPOINTS.CLIENTS, { take: 100 }),
           API.get(CONFIG.ENDPOINTS.PEDIDOS, { take: 5, estado: 'PENDIENTE', unassigned: true }),
@@ -266,7 +264,6 @@
           API.get(CONFIG.ENDPOINTS.VEHICLES, { take: 100 }),
         ]);
 
-        // Actualizar cards de resumen
         document.getElementById('totalClientes').textContent = clientes.total || 0;
         
         const pendientes = pedidos.total || 0;
@@ -278,10 +275,8 @@
         const disponibles = vehiculos.items?.filter(v => v.estado === 'ACTIVO').length || 0;
         document.getElementById('vehiculosDisponibles').textContent = disponibles;
 
-        // Cargar rutas recientes (últimas 5)
         loadRutasRecientes(rutas.items?.slice(0, 5) || []);
 
-        // Cargar pedidos pendientes (primeros 5)
         const pedidosPendientes = pedidos.items || [];
         loadPedidosPendientes(pedidosPendientes);
 
@@ -291,9 +286,18 @@
       }
     }
 
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function loadRutasRecientes(rutas) {
       const container = document.getElementById('rutasRecientes');
-      
+
       if (rutas.length === 0) {
         container.innerHTML = '<p class="text-center text-muted">No hay rutas recientes</p>';
         return;
@@ -317,8 +321,8 @@
                 <tr>
                   <td>#${ruta.id}</td>
                   <td>${UI.formatDate(ruta.fechaRuta)}</td>
-                  <td>${ruta.conductor?.nombre || '-'}</td>
-                  <td>${ruta.zona || '-'}</td>
+                  <td>${escapeHtml(ruta.conductor?.nombre || '-')}</td>
+                  <td>${escapeHtml(ruta.zona || '-')}</td>
                   <td>${UI.createBadge(ruta.estado, ruta.estado)}</td>
                   <td>${ruta.stops?.length || 0}</td>
                 </tr>
@@ -355,7 +359,7 @@
               ${pedidos.map(pedido => `
                 <tr>
                   <td>#${pedido.id}</td>
-                  <td>${pedido.client?.razonSocial || '-'}</td>
+                  <td>${escapeHtml(pedido.client?.razonSocial || '-')}</td>
                   <td>${UI.formatDate(pedido.fechaSolicitud)}</td>
                   <td>${UI.formatDate(pedido.fechaCompromiso)}</td>
                   <td>${pedido.cajas || 0}</td>
@@ -369,8 +373,9 @@
       container.innerHTML = html;
     }
 
-    // Cargar datos al iniciar
     loadDashboardData();
+
+    UI.initNotifications();
   </script>
 
 </body>

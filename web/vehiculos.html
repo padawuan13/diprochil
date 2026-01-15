@@ -217,22 +217,18 @@
   <script src="js/vehiculos.js"></script>
 
   <script>
-    // Proteger página
     Auth.requireAuth([CONFIG.ROLES.ADMIN, CONFIG.ROLES.PLANIFICADOR, CONFIG.ROLES.SUPERVISOR]);
 
-    // Mostrar usuario en header
     const user = Auth.getUser();
     document.getElementById('userName').textContent = user?.nombre || 'Usuario';
     document.getElementById('userRole').textContent = user?.role || 'Sin rol';
     document.getElementById('userAvatar').textContent = user?.nombre?.charAt(0).toUpperCase() || 'U';
 
-    // Mostrar/ocultar menú según rol
     const userRole = user?.role;
     if (userRole !== CONFIG.ROLES.ADMIN) {
       document.getElementById('nav-admin').style.display = 'none';
     }
 
-    // Hamburger menu
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -249,15 +245,14 @@
       hamburgerBtn.classList.remove('open');
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
         Auth.logout();
       }
     });
 
-    // Inicializar módulo de vehículos
     Vehiculos.init();
+    UI.initNotifications();
   </script>
 
 </body>

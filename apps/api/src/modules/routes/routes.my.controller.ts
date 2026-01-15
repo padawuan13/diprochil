@@ -12,7 +12,6 @@ function todayLocalYYYYMMDD() {
 
 function normalizeDateParam(dateStr?: string) {
   if (!dateStr) return todayLocalYYYYMMDD();
-  // Esperamos YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
   return dateStr;
 }
@@ -31,13 +30,19 @@ export async function handleMyRoutes(req: Request, res: Response) {
     });
   }
 
-  // DATE en MySQL (Prisma lo maneja como Date)
-  const fechaRuta = new Date(`${yyyyMmDd}T00:00:00.000Z`);
+  const fechaInicio = new Date(`${yyyyMmDd}T00:00:00.000Z`);
+  const fechaFin = new Date(`${yyyyMmDd}T23:59:59.999Z`);
+
+  console.log(`🚚 [/routes/my] Conductor ID: ${user.id}, Fecha: ${yyyyMmDd}`);
+  console.log(`   Rango búsqueda: ${fechaInicio.toISOString()} - ${fechaFin.toISOString()}`);
 
   const routes = await prisma.route.findMany({
     where: {
       conductorId: user.id,
-      fechaRuta,
+      fechaRuta: {
+        gte: fechaInicio,
+        lte: fechaFin,
+      },
     },
     orderBy: { id: "desc" },
     include: {
@@ -55,7 +60,6 @@ export async function handleMyRoutes(req: Request, res: Response) {
     },
   });
 
-  // Totales útiles para la app (opcional pero pro)
   const totalStops = routes.reduce((acc, r) => acc + r.stops.length, 0);
   const totalCajas = routes.reduce((acc, r) => {
     return (
@@ -63,6 +67,11 @@ export async function handleMyRoutes(req: Request, res: Response) {
       r.stops.reduce((a2, s) => a2 + (s.pedido?.cajas ?? 0), 0)
     );
   }, 0);
+
+  console.log(`   Rutas encontradas: ${routes.length}`);
+  routes.forEach(r => {
+    console.log(`   - Ruta #${r.id}: fecha=${r.fechaRuta.toISOString()}, zona=${r.zona}, estado=${r.estado}`);
+  });
 
   return res.json({
     ok: true,

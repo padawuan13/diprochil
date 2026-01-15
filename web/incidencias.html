@@ -127,13 +127,6 @@
               <option value="">Todas</option>
             </select>
 
-            <select class="form-select" id="filterSeveridad" style="width: 200px;">
-              <option value="">Todas las severidades</option>
-              <option value="BAJA">Baja</option>
-              <option value="MEDIA">Media</option>
-              <option value="ALTA">Alta</option>
-              <option value="CRITICA">Crítica</option>
-            </select>
           </div>
 
           <div class="toolbar-right">
@@ -166,8 +159,7 @@
   <script src="js/incidencias.js"></script>
 
   <script>
-    // Solo ADMIN / PLANIFICADOR / SUPERVISOR
-    Auth.requireAuth([CONFIG.ROLES.ADMIN, CONFIG.ROLES.PLANIFICADOR, CONFIG.ROLES.SUPERVISOR]);
+    Auth.requireAuth([CONFIG.ROLES.ADMIN, CONFIG.ROLES.PLANIFICADOR, CONFIG.ROLES.SUPERVISOR, CONFIG.ROLES.CONDUCTOR]);
 
     const user = Auth.getUser();
     const userRole = user?.role;
@@ -176,12 +168,10 @@
     document.getElementById('userRole').textContent = userRole || 'Sin rol';
     document.getElementById('userAvatar').textContent = user?.nombre?.charAt(0).toUpperCase() || 'U';
 
-    // Menú según rol
     if (userRole !== CONFIG.ROLES.ADMIN) {
       document.getElementById('nav-admin').style.display = 'none';
     }
 
-    // Hamburger menu
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -198,7 +188,6 @@
       hamburgerBtn.classList.remove('open');
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
         Auth.logout();
@@ -206,6 +195,7 @@
     });
 
     Incidencias.init();
+    UI.initNotifications();
   </script>
 
 </body>

@@ -9,7 +9,6 @@ import {
 
 export const vehiclesRouter = Router();
 
-// Listar: ADMIN / PLANIFICADOR / SUPERVISOR
 vehiclesRouter.get(
   "/vehicles",
   authMiddleware,
@@ -17,7 +16,6 @@ vehiclesRouter.get(
   handleListVehicles
 );
 
-// Crear: ADMIN / PLANIFICADOR
 vehiclesRouter.post(
   "/vehicles",
   authMiddleware,
@@ -25,7 +23,6 @@ vehiclesRouter.post(
   handleCreateVehicle
 );
 
-// Editar: ADMIN / PLANIFICADOR
 vehiclesRouter.patch(
   "/vehicles/:id",
   authMiddleware,

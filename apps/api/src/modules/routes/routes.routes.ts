@@ -4,6 +4,7 @@ import { requireRoles } from "../../middlewares/roles.middleware";
 import {
   handleAddStop,
   handleCreateRoute,
+  handleDeleteRoute,
   handleDeleteStop,
   handleGetRoute,
   handleListRoutes,
@@ -18,6 +19,8 @@ import {
   handleOptimizeRoute,
   handlePreviewImportExcel,
   handleImportExcel,
+  handleGetConductoresCarga,
+  handleAutoAsignar,
 } from "./routes.controller";
 
 const upload = multer({
@@ -27,7 +30,6 @@ const upload = multer({
 
 export const routesRouter = Router();
 
-// Rutas
 routesRouter.get(
   "/routes",
   authMiddleware,
@@ -42,15 +44,27 @@ routesRouter.get(
   handleMyRoutes
 );
 
-// POST /routes/optimize - Preview de optimización
+routesRouter.get(
+  "/routes/conductores-carga",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR"),
+  handleGetConductoresCarga
+);
+
+routesRouter.get(
+  "/routes/auto-asignar",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR"),
+  handleAutoAsignar
+);
+
 routesRouter.post(
   "/routes/optimize",
   authMiddleware,
-  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR"),
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR", "CONDUCTOR"),
   handleOptimizeRoute
 );
 
-// POST /routes/import/preview - Preview de importación (no guarda)
 routesRouter.post(
   "/routes/import/preview",
   authMiddleware,
@@ -59,7 +73,6 @@ routesRouter.post(
   handlePreviewImportExcel
 );
 
-// POST /routes/import - Importar Excel y crear pedidos
 routesRouter.post(
   "/routes/import",
   authMiddleware,
@@ -89,6 +102,13 @@ routesRouter.get(
   handleGetRoute
 );
 
+routesRouter.delete(
+  "/routes/:id",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR"),
+  handleDeleteRoute
+);
+
 routesRouter.post(
   "/routes",
   authMiddleware,
@@ -96,7 +116,6 @@ routesRouter.post(
   handleCreateRoute
 );
 
-// POST /routes/import-with-routes - Importar Excel y crear rutas automáticas
 routesRouter.post(
   "/routes/import-with-routes",
   authMiddleware,
@@ -105,7 +124,6 @@ routesRouter.post(
   handleImportExcelConRutas  
 );
 
-// Paradas
 routesRouter.post(
   "/routes/:id/stops",
   authMiddleware,

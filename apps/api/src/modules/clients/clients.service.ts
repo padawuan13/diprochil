@@ -79,13 +79,11 @@ export async function createClient(input: CreateClientInput) {
     active: input.active ?? true,
   };
 
-  // Solo agrega propiedades si vienen con valor (evita undefined)
   if (input.giro?.trim()) data.giro = input.giro.trim();
   if (input.telefono?.trim()) data.telefono = input.telefono.trim();
   if (input.direccion?.trim()) data.direccion = input.direccion.trim();
   if (input.isla?.trim()) data.isla = input.isla.trim();
 
-  // Geolocalización (opcional)
   if (typeof input.latitud === "number") data.latitud = input.latitud;
   if (typeof input.longitud === "number") data.longitud = input.longitud;
 
@@ -93,7 +91,6 @@ export async function createClient(input: CreateClientInput) {
 }
 
 export async function updateClient(id: number, data: any) {
-  // Normalizar RUT si viene en el PATCH (evita perder guión/formato)
   if (data?.rut) {
     data.rut = canonicalRut(String(data.rut));
   }

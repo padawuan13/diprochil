@@ -79,9 +79,7 @@ export async function handleDeletePedido(req: Request, res: Response) {
     const deleted = await deletePedido(id);
     return res.json({ ok: true, item: deleted });
   } catch (err: any) {
-    // Prisma: registro no existe
     if (err?.code === "P2025") return res.status(404).json({ ok: false, message: "Pedido not found" });
-    // Restricciones de negocio
     if (err?.status === 409) return res.status(409).json({ ok: false, message: err.message });
     throw err;
   }

@@ -6,13 +6,13 @@ export async function handleLogin(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({ ok: false, message: "Invalid body", issues: parsed.error.issues });
+    return res.status(400).json({ ok: false, message: "Datos de inicio de sesion invalidos", issues: parsed.error.issues });
   }
 
   const result = await login(parsed.data.email, parsed.data.password);
 
   if (!result) {
-    return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    return res.status(401).json({ ok: false, message: "Usuario o contraseña incorrectos" });
   }
 
   return res.json({ ok: true, ...result });

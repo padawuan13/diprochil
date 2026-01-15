@@ -11,7 +11,46 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
 
-  
+  <style>
+    /* Estilos para autocomplete de clientes */
+    .autocomplete-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0 0 8px 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .autocomplete-item:hover,
+    .autocomplete-item.active {
+      background: #eff6ff;
+    }
+    .autocomplete-item .cliente-nombre {
+      font-weight: 600;
+      color: #111827;
+    }
+    .autocomplete-item .cliente-rut {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .autocomplete-item .cliente-comuna {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .form-group {
+      position: relative;
+    }
+  </style>
 </head>
 <body>
   <div class="app-container">
@@ -109,8 +148,7 @@
               <option value="">Todos los estados</option>
             </select>
 
-            <!-- UX: ocultar históricos (entregados / no entregados vencidos) para no saturar la vista -->
-</div>
+          </div>
 
           <div class="toolbar-right">
             <div class="dropdown">
@@ -135,7 +173,7 @@
 
   <!-- MODAL: NUEVO PEDIDO -->
   <div class="modal" id="modalNuevoPedido" aria-hidden="true">
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalNuevoPedidoTitle">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalNuevoPedidoTitle" style="max-width: 600px;">
       <div class="modal-header">
         <div class="modal-title" id="modalNuevoPedidoTitle">Nuevo pedido</div>
         <button class="btn btn-secondary btn-icon" id="btnCerrarModalNuevo" type="button" title="Cerrar">✕</button>
@@ -144,8 +182,17 @@
         <div id="nuevoMessage"></div>
         <form id="formNuevoPedido">
           <div class="form-group">
-            <label class="form-label required" for="nuevo_clientId">Cliente</label>
-            <select class="form-select" id="nuevo_clientId" required></select>
+            <label class="form-label required" for="nuevo_clienteBusqueda">Cliente</label>
+            <input
+              type="text"
+              class="form-input"
+              id="nuevo_clienteBusqueda"
+              placeholder="Buscar por nombre o RUT..."
+              autocomplete="off"
+              required
+            >
+            <input type="hidden" id="nuevo_clientId">
+            <div id="nuevo_clienteResultados" class="autocomplete-results" style="display: none;"></div>
           </div>
 
           <div class="form-group">
@@ -154,13 +201,42 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="nuevo_fechaCompromiso">Fecha compromiso</label>
-            <input class="form-input" id="nuevo_fechaCompromiso" type="date">
+            <label class="form-label required" for="nuevo_fechaCompromiso">Fecha compromiso</label>
+            <input class="form-input" id="nuevo_fechaCompromiso" type="date" required>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="nuevo_comentarios">Comentarios</label>
-            <textarea class="form-textarea" id="nuevo_comentarios" rows="3" placeholder="Opcional"></textarea>
+            <textarea class="form-textarea" id="nuevo_comentarios" rows="2" placeholder="Opcional"></textarea>
+          </div>
+
+          <!-- Asignación a ruta -->
+          <div style="border-top: 1px solid #e5e7eb; margin-top: 16px; padding-top: 16px;">
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="nuevo_asignarRuta" style="width: 18px; height: 18px;">
+                <span class="form-label" style="margin: 0;">Asignar a ruta automáticamente</span>
+              </label>
+              <p class="text-muted text-sm" style="margin-top: 4px;">Si hay una ruta existente para la fecha y comuna del cliente, el pedido se agregará como parada. Si no existe, se creará una nueva ruta.</p>
+            </div>
+
+            <div id="seccionAsignacionRuta" style="display: none;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label required" for="nuevo_conductorId">Conductor</label>
+                  <select class="form-select" id="nuevo_conductorId">
+                    <option value="">Seleccionar...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label required" for="nuevo_vehicleId">Vehículo</label>
+                  <select class="form-select" id="nuevo_vehicleId">
+                    <option value="">Seleccionar...</option>
+                  </select>
+                </div>
+              </div>
+              <p class="text-muted text-sm">El sistema buscará una ruta existente con el mismo conductor, fecha y zona (comuna del cliente). Si no encuentra, creará una nueva.</p>
+            </div>
           </div>
 
           <div class="modal-footer">
@@ -234,7 +310,7 @@
 
   <!-- MODAL: EDITAR PEDIDO -->
   <div class="modal" id="modalEditarPedido" aria-hidden="true">
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalEditarPedidoTitle">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalEditarPedidoTitle" style="max-width: 600px;">
       <div class="modal-header">
         <div class="modal-title" id="modalEditarPedidoTitle">Editar pedido</div>
         <button class="btn btn-secondary btn-icon" id="btnCerrarModalEditar" type="button" title="Cerrar">✕</button>
@@ -261,16 +337,28 @@
 
           <div class="form-group">
             <label class="form-label" for="editar_comentarios">Comentarios</label>
-            <textarea class="form-textarea" id="editar_comentarios" rows="3"></textarea>
+            <textarea class="form-textarea" id="editar_comentarios" rows="2"></textarea>
           </div>
 
-          <div class="form-group">
-            <label class="form-label required" for="editar_estado">Estado</label>
-            <select class="form-select" id="editar_estado" required>
-              <option value="PENDIENTE">PENDIENTE</option>
-              <option value="ENTREGADO">ENTREGADO</option>
-              <option value="NO_ENTREGADO">NO_ENTREGADO</option>
-            </select>
+          <!-- Asignacion de ruta -->
+          <div style="border-top: 1px solid #e5e7eb; margin-top: 16px; padding-top: 16px;">
+            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Asignacion de Ruta</h4>
+            <div id="editar_rutaInfo" style="margin-bottom: 12px;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label" for="editar_conductorId">Conductor</label>
+                <select class="form-select" id="editar_conductorId">
+                  <option value="">Sin asignar</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editar_vehicleId">Vehiculo</label>
+                <select class="form-select" id="editar_vehicleId">
+                  <option value="">Sin asignar</option>
+                </select>
+              </div>
+            </div>
+            <p class="text-muted text-sm">Si el pedido ya esta en una ruta, cambiar conductor/vehiculo actualizara la ruta existente.</p>
           </div>
 
           <div class="modal-footer">
@@ -305,7 +393,6 @@
       document.getElementById('nav-admin').style.display = 'none';
     }
 
-    // Menú lateral
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -318,14 +405,14 @@
       sidebarOverlay.classList.remove('active');
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) Auth.logout();
     });
 
-    // Inicializar pedidos
     Pedidos.init();
+
+    UI.initNotifications();
   </script>
-  
+
 </body>
 </html>

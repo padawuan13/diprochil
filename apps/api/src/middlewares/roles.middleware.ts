@@ -12,7 +12,6 @@ export function requireRoles(...roles: string[]) {
     }
 
     if (!allowed.includes(got)) {
-      // ✅ esto te dirá exactamente qué llegó y qué se esperaba
       return res.status(403).json({
         ok: false,
         message: "Forbidden",

@@ -1,20 +1,20 @@
 import { prisma } from "../../lib/prisma";
-import type { IncidenciaEstado, IncidenciaSeveridad } from "@prisma/client";
+import type { IncidenciaEstado } from "@prisma/client";
 
 export async function listIncidents(params: {
   take: number;
   skip: number;
   routeId?: number;
   pedidoId?: number;
+  createdById?: number;
   estado?: IncidenciaEstado;
-  severidad?: IncidenciaSeveridad;
 }) {
   const where: any = {};
 
   if (params.routeId !== undefined) where.routeId = params.routeId;
   if (params.pedidoId !== undefined) where.pedidoId = params.pedidoId;
+  if (params.createdById !== undefined) where.createdById = params.createdById;
   if (params.estado !== undefined) where.estado = params.estado;
-  if (params.severidad !== undefined) where.severidad = params.severidad;
 
   const [items, total] = await Promise.all([
     prisma.incident.findMany({
@@ -26,6 +26,7 @@ export async function listIncidents(params: {
         route: { include: { vehicle: true, conductor: { select: { id: true, nombre: true, email: true, role: true } } } },
         pedido: { include: { client: true } },
         createdBy: { select: { id: true, nombre: true, email: true, role: true } },
+        reviewedBy: { select: { id: true, nombre: true, email: true, role: true } },
       },
     }),
     prisma.incident.count({ where }),
@@ -34,13 +35,38 @@ export async function listIncidents(params: {
   return { items, total, take: params.take, skip: params.skip };
 }
 
+export async function countPendingIncidents() {
+  return prisma.incident.count({
+    where: { estado: "ABIERTA" },
+  });
+}
+
+export async function getIncidentById(id: number) {
+  const incident = await prisma.incident.findUnique({
+    where: { id },
+    include: {
+      route: { include: { vehicle: true, conductor: { select: { id: true, nombre: true, email: true, role: true } } } },
+      pedido: { include: { client: true } },
+      createdBy: { select: { id: true, nombre: true, email: true, role: true } },
+      reviewedBy: { select: { id: true, nombre: true, email: true, role: true } },
+    },
+  });
+
+  if (!incident) {
+    const err: any = new Error("Incident not found");
+    err.status = 404;
+    throw err;
+  }
+
+  return incident;
+}
+
 export async function createIncident(input: {
   routeId: number;
   pedidoId?: number;
   createdById?: number;
   tipo: string;
   descripcion: string;
-  severidad?: IncidenciaSeveridad;
 }) {
   const route = await prisma.route.findUnique({ where: { id: input.routeId }, select: { id: true } });
   if (!route) {
@@ -62,11 +88,11 @@ export async function createIncident(input: {
     routeId: input.routeId,
     tipo: input.tipo.trim(),
     descripcion: input.descripcion.trim(),
+    estado: "ABIERTA",
   };
 
   if (input.pedidoId !== undefined) data.pedidoId = input.pedidoId;
   if (input.createdById !== undefined) data.createdById = input.createdById;
-  if (input.severidad !== undefined) data.severidad = input.severidad;
 
   return prisma.incident.create({
     data,
@@ -74,6 +100,50 @@ export async function createIncident(input: {
       route: { include: { vehicle: true, conductor: { select: { id: true, nombre: true, email: true, role: true } } } },
       pedido: { include: { client: true } },
       createdBy: { select: { id: true, nombre: true, email: true, role: true } },
+      reviewedBy: { select: { id: true, nombre: true, email: true, role: true } },
+    },
+  });
+}
+
+export async function reviewIncident(
+  id: number,
+  reviewerId: number,
+  input: {
+    estado: "EN_REVISION" | "CERRADA";
+    comentarioResolucion?: string;
+  }
+) {
+  const incident = await prisma.incident.findUnique({ where: { id }, select: { id: true, estado: true } });
+  if (!incident) {
+    const err: any = new Error("Incident not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const data: any = {
+    estado: input.estado,
+    reviewedById: reviewerId,
+  };
+
+  if (input.estado === "EN_REVISION") {
+    data.fechaRevision = new Date();
+  }
+
+  if (input.estado === "CERRADA") {
+    data.fechaCierre = new Date();
+    if (input.comentarioResolucion) {
+      data.comentarioResolucion = input.comentarioResolucion.trim();
+    }
+  }
+
+  return prisma.incident.update({
+    where: { id },
+    data,
+    include: {
+      route: { include: { vehicle: true, conductor: { select: { id: true, nombre: true, email: true, role: true } } } },
+      pedido: { include: { client: true } },
+      createdBy: { select: { id: true, nombre: true, email: true, role: true } },
+      reviewedBy: { select: { id: true, nombre: true, email: true, role: true } },
     },
   });
 }
@@ -81,8 +151,8 @@ export async function createIncident(input: {
 export async function updateIncident(id: number, input: {
   tipo?: string;
   descripcion?: string;
-  severidad?: IncidenciaSeveridad;
   estado?: IncidenciaEstado;
+  comentarioResolucion?: string;
 }) {
   const incident = await prisma.incident.findUnique({ where: { id }, select: { id: true } });
   if (!incident) {
@@ -94,8 +164,8 @@ export async function updateIncident(id: number, input: {
   const data: any = {};
   if (input.tipo !== undefined) data.tipo = input.tipo.trim();
   if (input.descripcion !== undefined) data.descripcion = input.descripcion.trim();
-  if (input.severidad !== undefined) data.severidad = input.severidad;
   if (input.estado !== undefined) data.estado = input.estado;
+  if (input.comentarioResolucion !== undefined) data.comentarioResolucion = input.comentarioResolucion.trim();
 
   return prisma.incident.update({
     where: { id },
@@ -104,6 +174,7 @@ export async function updateIncident(id: number, input: {
       route: { include: { vehicle: true, conductor: { select: { id: true, nombre: true, email: true, role: true } } } },
       pedido: { include: { client: true } },
       createdBy: { select: { id: true, nombre: true, email: true, role: true } },
+      reviewedBy: { select: { id: true, nombre: true, email: true, role: true } },
     },
   });
 }

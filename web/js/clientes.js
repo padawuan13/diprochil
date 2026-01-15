@@ -12,6 +12,18 @@ const Clientes = {
   mapVisible: true, // Estado de visibilidad del mapa principal
 
   /**
+   * Escapar HTML para prevenir XSS
+   */
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  /**
    * Inicializar módulo
    */
   init() {
@@ -24,12 +36,10 @@ const Clientes = {
    * Configurar event listeners
    */
   setupEventListeners() {
-    // Botón nuevo cliente
     document.getElementById('btnNuevoCliente').addEventListener('click', () => {
       this.abrirModal();
     });
 
-    // Cerrar modal
     document.getElementById('btnCerrarModal').addEventListener('click', () => {
       this.cerrarModal();
     });
@@ -38,18 +48,15 @@ const Clientes = {
       this.cerrarModal();
     });
 
-    // Submit formulario
     document.getElementById('formCliente').addEventListener('submit', (e) => {
       e.preventDefault();
       this.guardarCliente();
     });
 
-    // Búsqueda en tiempo real
     document.getElementById('searchInput').addEventListener('input', (e) => {
       this.filtrarClientes(e.target.value);
     });
 
-    // Toggle mapa principal
     const btnToggleMapView = document.getElementById('btnToggleMapView');
     if (btnToggleMapView) {
       btnToggleMapView.addEventListener('click', () => {
@@ -57,7 +64,6 @@ const Clientes = {
       });
     }
 
-    // Botón mostrar/ocultar mapa en modal
     const btnMostrarMapa = document.getElementById('btnMostrarMapa');
     if (btnMostrarMapa) {
       btnMostrarMapa.addEventListener('click', () => {
@@ -65,10 +71,8 @@ const Clientes = {
       });
     }
 
-    // Botón geocodificar
     document.getElementById('btnGeocodificar').addEventListener('click', () => {
-      // Enviar al flujo profesional de importación + geocodificación por Excel
-      window.location.href = 'importar-geocodificador.html';
+      this.abrirModalGeocodificar();
     });
 
     document.getElementById('btnCerrarModalGeo').addEventListener('click', () => {
@@ -83,21 +87,16 @@ const Clientes = {
       this.iniciarGeocodificacion();
     });
 
-    // Auto-formatear RUT mientras se escribe
     document.getElementById('rut').addEventListener('input', (e) => {
       const input = e.target;
       const cursorPos = input.selectionStart;
       const valueBefore = input.value;
-      
-      // Limpiar formato previo
       let cleaned = valueBefore.replace(/[^0-9kK]/g, '');
-      
-      // Limitar a 9 caracteres
+
       if (cleaned.length > 9) {
         cleaned = cleaned.substring(0, 9);
       }
 
-      // Formatear si tiene contenido
       if (cleaned.length > 1) {
         const dv = cleaned.slice(-1);
         const numero = cleaned.slice(0, -1);
@@ -114,10 +113,8 @@ const Clientes = {
    */
   initMainMap() {
     try {
-      // Centro en Chiloé, Chile
       this.mainMap = L.map('mainMap').setView([-42.4696, -73.7711], 10);
 
-      // Agregar capa de OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18,
@@ -133,7 +130,6 @@ const Clientes = {
    * Actualizar marcadores del mapa principal
    */
   updateMainMapMarkers(clientes) {
-    // Limpiar marcadores existentes
     this.mainMarkers.forEach(marker => this.mainMap.removeLayer(marker));
     this.mainMarkers = [];
 
@@ -143,18 +139,17 @@ const Clientes = {
     clientes.forEach(cliente => {
       if (cliente.latitud && cliente.longitud) {
         withGeo++;
-        
-        // Crear marcador
+
         const marker = L.marker([cliente.latitud, cliente.longitud])
           .bindPopup(`
             <div style="min-width: 200px;">
-              <strong style="color: #2563eb; font-size: 16px;">${cliente.razonSocial}</strong><br>
+              <strong style="color: #2563eb; font-size: 16px;">${this.escapeHtml(cliente.razonSocial)}</strong><br>
               <span style="color: #6b7280;">RUT:</span> <strong>${cliente.rut ? UI.formatRUT(cliente.rut) : ''}</strong><br>
-              <span style="color: #6b7280;">📍</span> ${cliente.direccion || cliente.comuna}<br>
-              <span style="color: #6b7280;">🏙️</span> ${cliente.comuna}, ${cliente.ciudad}<br>
-              ${cliente.telefono ? `<span style="color: #6b7280;">📞</span> ${cliente.telefono}<br>` : ''}
-              <button 
-                onclick="Clientes.editarCliente(${cliente.id})" 
+              <span style="color: #6b7280;">📍</span> ${this.escapeHtml(cliente.direccion || cliente.comuna)}<br>
+              <span style="color: #6b7280;">🏙️</span> ${this.escapeHtml(cliente.comuna)}, ${this.escapeHtml(cliente.ciudad)}<br>
+              ${cliente.telefono ? `<span style="color: #6b7280;">📞</span> ${this.escapeHtml(cliente.telefono)}<br>` : ''}
+              <button
+                onclick="Clientes.editarCliente(${parseInt(cliente.id)})"
                 style="margin-top: 8px; padding: 4px 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;"
               >
                 ✏️ Editar
@@ -169,12 +164,10 @@ const Clientes = {
       }
     });
 
-    // Actualizar contadores
     document.getElementById('countWithGeo').textContent = withGeo;
     document.getElementById('countWithoutGeo').textContent = withoutGeo;
     document.getElementById('countTotal').textContent = clientes.length;
 
-    // Ajustar vista si hay marcadores
     if (this.mainMarkers.length > 0) {
       const group = L.featureGroup(this.mainMarkers);
       this.mainMap.fitBounds(group.getBounds().pad(0.1));
@@ -195,8 +188,7 @@ const Clientes = {
     if (this.mapVisible) {
       container.style.display = 'block';
       btn.textContent = 'Ocultar Mapa';
-      
-      // Invalidar tamaño para renderizar correctamente
+
       setTimeout(() => {
         this.mainMap.invalidateSize();
       }, 100);
@@ -210,12 +202,10 @@ const Clientes = {
    * Inicializar mapa del modal
    */
   initModalMap() {
-    // Si el mapa ya existe, no reinicializar
     if (this.modalMap) {
       return;
     }
 
-    // Verificar que el contenedor exista
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
       console.error('Contenedor de mapa modal no encontrado');
@@ -223,16 +213,13 @@ const Clientes = {
     }
 
     try {
-      // Centro en Chiloé, Chile
       this.modalMap = L.map('map').setView([-42.4696, -73.7711], 10);
 
-      // Agregar capa de OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18,
       }).addTo(this.modalMap);
 
-      // Click en el mapa para establecer ubicación
       this.modalMap.on('click', (e) => {
         this.setUbicacionModal(e.latlng.lat, e.latlng.lng);
       });
@@ -247,30 +234,24 @@ const Clientes = {
    * Establecer ubicación en el mapa del modal
    */
   setUbicacionModal(lat, lng) {
-    // Eliminar marcador anterior si existe
     if (this.modalMarker) {
       this.modalMap.removeLayer(this.modalMarker);
     }
 
-    // Crear nuevo marcador
     this.modalMarker = L.marker([lat, lng], {
       draggable: true
     }).addTo(this.modalMap);
 
-    // Actualizar inputs ocultos
     document.getElementById('latitud').value = lat.toFixed(6);
     document.getElementById('longitud').value = lng.toFixed(6);
 
-    // Actualizar texto de coordenadas
     this.updateCoordsDisplay(lat, lng);
 
-    // Permitir arrastrar el marcador
     this.modalMarker.on('dragend', (e) => {
       const position = e.target.getLatLng();
       this.setUbicacionModal(position.lat, position.lng);
     });
 
-    // Centrar mapa en el marcador
     this.modalMap.setView([lat, lng], 13);
   },
 
@@ -292,37 +273,31 @@ const Clientes = {
     const btnMostrarMapa = document.getElementById('btnMostrarMapa');
     
     if (mapaGroup.style.display === 'none') {
-      // Mostrar mapa
       mapaGroup.style.display = 'block';
       btnMostrarMapa.textContent = 'Ocultar Mapa';
-      
-      // Inicializar mapa si no existe
+
       if (!this.modalMap) {
         setTimeout(() => {
           this.initModalMap();
-          
-          // Si hay coordenadas guardadas, mostrarlas
+
           const lat = parseFloat(document.getElementById('latitud').value);
           const lng = parseFloat(document.getElementById('longitud').value);
-          
+
           if (lat && lng) {
             this.setUbicacionModal(lat, lng);
           }
         }, 100);
       } else {
-        // Invalidar tamaño para que se renderice correctamente
         this.modalMap.invalidateSize();
-        
-        // Si hay coordenadas guardadas, mostrarlas
+
         const lat = parseFloat(document.getElementById('latitud').value);
         const lng = parseFloat(document.getElementById('longitud').value);
-        
+
         if (lat && lng) {
           this.setUbicacionModal(lat, lng);
         }
       }
     } else {
-      // Ocultar mapa
       mapaGroup.style.display = 'none';
       btnMostrarMapa.textContent = 'Ver/Editar en Mapa';
     }
@@ -357,9 +332,8 @@ const Clientes = {
   async cargarClientes() {
     console.log('🔄 Cargando clientes...');
     try {
-      // Cargar TODOS los clientes (sin límite, para que el buscador funcione)
-      const response = await API.get(CONFIG.ENDPOINTS.CLIENTS, { 
-        take: 10000,
+      const response = await API.get(CONFIG.ENDPOINTS.CLIENTS, {
+        take: 1000,
         skip: 0,
       });
       console.log('📊 Respuesta del API:', response);
@@ -367,8 +341,6 @@ const Clientes = {
       console.log('📦 Clientes cargados:', response.items?.length);
       
       this.clientes = response.items || [];
-      
-      // Ordenar por ID descendente (más recientes primero)
       this.clientes.sort((a, b) => b.id - a.id);
       
       console.log('✅ Clientes listos para mostrar');
@@ -416,11 +388,11 @@ const Clientes = {
             ${clientes.map(cliente => `
               <tr>
                 <td>${cliente.rut ? UI.formatRUT(cliente.rut) : '-'}</td>
-                <td><strong>${cliente.razonSocial}</strong></td>
-                <td>${cliente.direccion || '-'}</td>
-                <td>${cliente.comuna || '-'}</td>
-                <td>${cliente.ciudad || '-'}</td>
-                <td>${cliente.telefono || '-'}</td>
+                <td><strong>${this.escapeHtml(cliente.razonSocial)}</strong></td>
+                <td>${this.escapeHtml(cliente.direccion || '-')}</td>
+                <td>${this.escapeHtml(cliente.comuna || '-')}</td>
+                <td>${this.escapeHtml(cliente.ciudad || '-')}</td>
+                <td>${this.escapeHtml(cliente.telefono || '-')}</td>
                 <td class="text-center">
                   ${cliente.latitud && cliente.longitud 
                     ? '<span style="color: #10b981; font-size: 18px;" title="Ubicación establecida">✓</span>' 
@@ -468,7 +440,6 @@ const Clientes = {
     console.log('🔍 Buscando:', termino);
     
     if (!termino || termino.trim() === '') {
-      // Si no hay término de búsqueda, mostrar todos
       console.log('📋 Mostrando todos los clientes:', this.clientes.length);
       this.renderizarTabla(this.clientes);
       this.updateMainMapMarkers(this.clientes);
@@ -500,25 +471,19 @@ const Clientes = {
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('formCliente');
 
-    // Limpiar formulario y mensajes
     form.reset();
     document.getElementById('modalMessage').innerHTML = '';
     UI.clearForm('formCliente');
 
-    // Limpiar mapa
     this.clearModalMap();
-    
-    // Ocultar mapa por defecto
     document.getElementById('mapaGroup').style.display = 'none';
-    
-    // Mostrar display de coordenadas
+
     const coordsDisplay = document.getElementById('coordsDisplay');
     if (coordsDisplay) {
       coordsDisplay.style.display = 'block';
     }
 
     if (cliente) {
-      // EDITAR
       title.textContent = 'Editar Cliente';
       document.getElementById('clienteId').value = cliente.id;
       document.getElementById('rut').value = cliente.rut ? UI.formatRUT(cliente.rut) : '';
@@ -529,15 +494,13 @@ const Clientes = {
       document.getElementById('isla').value = cliente.isla || '';
       document.getElementById('telefono').value = cliente.telefono || '';
       document.getElementById('giro').value = cliente.giro || '';
-      
-      // Cargar coordenadas si existen
+
       if (cliente.latitud && cliente.longitud) {
         document.getElementById('latitud').value = cliente.latitud;
         document.getElementById('longitud').value = cliente.longitud;
         this.updateCoordsDisplay(cliente.latitud, cliente.longitud);
       }
     } else {
-      // CREAR
       title.textContent = 'Nuevo Cliente';
       document.getElementById('clienteId').value = '';
       document.getElementById('coordsText').textContent = 'No establecidas';
@@ -571,16 +534,13 @@ const Clientes = {
   async guardarCliente() {
     console.log('🔵 Iniciando guardarCliente()...');
 
-    // Limpiar mensajes previos
     document.getElementById('modalMessage').innerHTML = '';
-    
-    // Limpiar TODOS los errores de campos
+
     const allErrors = document.querySelectorAll('.form-error');
     allErrors.forEach(el => el.textContent = '');
     const allInputsWithError = document.querySelectorAll('.form-input.error');
     allInputsWithError.forEach(el => el.classList.remove('error'));
 
-    // Obtener valores
     const id = document.getElementById('clienteId').value;
     const rutFormateado = document.getElementById('rut').value.trim();
     const razonSocial = document.getElementById('razonSocial').value.trim();
@@ -637,7 +597,6 @@ const Clientes = {
 
     console.log('✅ Validaciones pasadas');
 
-    // Normalizar RUT (sin puntos, con guión, DV en mayúscula)
     const rutNormalizado = rutFormateado
       .replace(/\./g, '')
       .replace(/-/g, '')
@@ -648,7 +607,6 @@ const Clientes = {
       ? `${rutNormalizado.slice(0, -1)}-${rutNormalizado.slice(-1)}`
       : rutNormalizado;
 
-    // Preparar datos
     const data = {
       rut: rutCanonical,
       razonSocial,
@@ -656,7 +614,6 @@ const Clientes = {
       ciudad,
     };
 
-    // Agregar campos opcionales solo si tienen valor
     if (direccion) data.direccion = direccion;
     if (isla) data.isla = isla;
     if (telefono) data.telefono = telefono;
@@ -682,13 +639,11 @@ const Clientes = {
 
       console.log('✅ Respuesta del servidor:', response);
 
-      document.getElementById('modalMessage').innerHTML = 
+      document.getElementById('modalMessage').innerHTML =
         `<div class="alert alert-success">${id ? 'Cliente actualizado' : 'Cliente creado'} correctamente</div>`;
 
-      // Recargar tabla y mapa
       await this.cargarClientes();
 
-      // Cerrar modal después de 1 segundo
       setTimeout(() => {
         this.cerrarModal();
       }, 1000);
@@ -717,7 +672,6 @@ const Clientes = {
         active: !estadoActual
       });
 
-      // Recargar tabla
       await this.cargarClientes();
 
       UI.showSuccess(`Cliente ${accion === 'desactivar' ? 'desactivado' : 'activado'} correctamente`);
@@ -736,18 +690,15 @@ const Clientes = {
    */
   abrirModalGeocodificar() {
     const modal = document.getElementById('modalGeocodificar');
-    
-    // Calcular estadísticas
+
     const total = this.clientes.length;
     const conUbicacion = this.clientes.filter(c => c.latitud && c.longitud).length;
     const sinUbicacion = total - conUbicacion;
 
-    // Actualizar resumen
     document.getElementById('geoTotal').textContent = total;
     document.getElementById('geoConUbicacion').textContent = conUbicacion;
     document.getElementById('geoSinUbicacion').textContent = sinUbicacion;
 
-    // Limpiar estado
     document.getElementById('geoMessage').innerHTML = '';
     document.getElementById('geoProgreso').style.display = 'none';
     document.getElementById('geoResultados').style.display = 'none';
@@ -782,12 +733,10 @@ const Clientes = {
       return;
     }
 
-    // Deshabilitar botón
     const btnIniciar = document.getElementById('btnIniciarGeo');
     btnIniciar.disabled = true;
     btnIniciar.textContent = 'Geocodificando...';
 
-    // Mostrar progreso
     document.getElementById('geoProgreso').style.display = 'block';
     document.getElementById('geoResultados').style.display = 'block';
     document.getElementById('geoResultados').innerHTML = '';
@@ -800,14 +749,12 @@ const Clientes = {
 
     for (let i = 0; i < clientesSinUbicacion.length; i++) {
       const cliente = clientesSinUbicacion[i];
-      
-      // Actualizar progreso
+
       const progreso = Math.round(((i + 1) / clientesSinUbicacion.length) * 100);
       document.getElementById('geoProgresoTexto').textContent = `${i + 1} de ${clientesSinUbicacion.length}`;
       document.getElementById('geoProgresoBar').style.width = `${progreso}%`;
 
       try {
-        // Llamar al endpoint de geocodificación
         const response = await API.patch(`${CONFIG.ENDPOINTS.CLIENTS}/${cliente.id}/geocode`, {});
         
         if (response.ok && response.item?.latitud && response.item?.longitud) {
@@ -843,7 +790,6 @@ const Clientes = {
         this.agregarResultadoGeo(cliente.razonSocial, false, error.message);
       }
 
-      // Pequeño delay para no saturar la API
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
@@ -856,10 +802,8 @@ const Clientes = {
       </div>
     `;
 
-    // Recargar clientes y mapa
     await this.cargarClientes();
 
-    // Cambiar botón
     btnIniciar.textContent = 'Finalizado';
   },
 
@@ -880,15 +824,13 @@ const Clientes = {
     resultado.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <strong style="color: #111827;">${nombreCliente}</strong><br>
-          <span style="color: #6b7280; font-size: 13px;">${detalle}</span>
+          <strong style="color: #111827;">${this.escapeHtml(nombreCliente)}</strong><br>
+          <span style="color: #6b7280; font-size: 13px;">${this.escapeHtml(detalle)}</span>
         </div>
         <span style="font-size: 18px;">${exito ? '✓' : '✗'}</span>
       </div>
     `;
     container.appendChild(resultado);
-    
-    // Auto-scroll al último resultado
     container.scrollTop = container.scrollHeight;
   }
 };

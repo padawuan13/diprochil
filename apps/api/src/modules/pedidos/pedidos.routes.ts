@@ -10,7 +10,6 @@ import {
 
 export const pedidosRouter = Router();
 
-// Listar: ADMIN / PLANIFICADOR / SUPERVISOR
 pedidosRouter.get(
   "/pedidos",
   authMiddleware,
@@ -18,7 +17,6 @@ pedidosRouter.get(
   handleListPedidos
 );
 
-// Crear: ADMIN / PLANIFICADOR
 pedidosRouter.post(
   "/pedidos",
   authMiddleware,
@@ -26,7 +24,6 @@ pedidosRouter.post(
   handleCreatePedido
 );
 
-// Actualizar: ADMIN / PLANIFICADOR / SUPERVISOR
 pedidosRouter.patch(
   "/pedidos/:id",
   authMiddleware,
@@ -34,7 +31,6 @@ pedidosRouter.patch(
   handleUpdatePedido
 );
 
-// Eliminar: ADMIN / PLANIFICADOR / SUPERVISOR (CONDUCTOR NO)
 pedidosRouter.delete(
   "/pedidos/:id",
   authMiddleware,

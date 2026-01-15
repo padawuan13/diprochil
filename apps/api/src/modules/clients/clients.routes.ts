@@ -5,7 +5,7 @@ import {
   handleListClients,
   handleImportClients,
   handleUpdateClient,
-  handleGetClient,  // ← AGREGADO
+  handleGetClient,
 } from "./clients.controller";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -18,12 +18,34 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-clientsRouter.get("/clients", handleListClients);
-clientsRouter.get("/clients/:id", handleGetClient);  // ← AGREGADO
-clientsRouter.post("/clients", handleCreateClient);
-clientsRouter.patch("/clients/:id", handleUpdateClient);
+clientsRouter.get(
+  "/clients",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR", "CONDUCTOR"),
+  handleListClients
+);
 
-// ✅ Protegido: solo ADMIN / PLANIFICADOR / SUPERVISOR
+clientsRouter.get(
+  "/clients/:id",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR", "CONDUCTOR"),
+  handleGetClient
+);
+
+clientsRouter.post(
+  "/clients",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR"),
+  handleCreateClient
+);
+
+clientsRouter.patch(
+  "/clients/:id",
+  authMiddleware,
+  requireRoles("ADMIN", "PLANIFICADOR", "SUPERVISOR", "CONDUCTOR"),
+  handleUpdateClient
+);
+
 clientsRouter.post(
   "/clients/import",
   authMiddleware,

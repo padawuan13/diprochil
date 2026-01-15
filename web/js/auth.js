@@ -3,15 +3,31 @@
    ======================================== */
 
 const Auth = {
+  // Flag para saber si usar localStorage o sessionStorage
+  _useLocalStorage: true,
+
   /**
    * Iniciar sesión
+   * @param {string} email
+   * @param {string} password
+   * @param {boolean} remember - Si es true, guarda en localStorage (persistente), si no en sessionStorage (solo esta pestaña)
    */
-  async login(email, password) {
+  async login(email, password, remember = false) {
     try {
       const response = await API.post(CONFIG.ENDPOINTS.LOGIN, { email, password }, false);
 
       if (response.ok && response.token && response.user) {
-        // Guardar token y usuario en localStorage
+        // Configurar si recordar sesion
+        this._useLocalStorage = remember;
+
+        // Guardar preferencia de recordar en localStorage siempre
+        if (remember) {
+          localStorage.setItem(CONFIG.STORAGE_KEYS.REMEMBER, 'true');
+        } else {
+          localStorage.removeItem(CONFIG.STORAGE_KEYS.REMEMBER);
+        }
+
+        // Guardar token y usuario
         this.setToken(response.token);
         this.setUser(response.user);
         return response;
@@ -28,9 +44,13 @@ const Auth = {
    * Cerrar sesión
    */
   logout() {
+    // Limpiar de ambos storages por si acaso
     localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
-    window.location.href = 'index.html'; // ✅ Ruta relativa
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.REMEMBER);
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
+    window.location.href = 'index.html';
   },
 
   /**
@@ -41,24 +61,45 @@ const Auth = {
   },
 
   /**
+   * Obtener el storage a usar (localStorage si recuerda, sessionStorage si no)
+   */
+  _getStorage() {
+    // Verificar si hay token en localStorage (sesion recordada)
+    if (localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)) {
+      return localStorage;
+    }
+    // Verificar si hay token en sessionStorage (sesion temporal)
+    if (sessionStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)) {
+      return sessionStorage;
+    }
+    // Por defecto usar segun flag interno
+    return this._useLocalStorage ? localStorage : sessionStorage;
+  },
+
+  /**
    * Obtener token
    */
   getToken() {
-    return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+    // Buscar en localStorage primero, luego sessionStorage
+    return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN) ||
+           sessionStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
   },
 
   /**
    * Guardar token
    */
   setToken(token) {
-    localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, token);
+    const storage = this._useLocalStorage ? localStorage : sessionStorage;
+    storage.setItem(CONFIG.STORAGE_KEYS.TOKEN, token);
   },
 
   /**
    * Obtener usuario
    */
   getUser() {
-    const userJson = localStorage.getItem(CONFIG.STORAGE_KEYS.USER);
+    // Buscar en localStorage primero, luego sessionStorage
+    const userJson = localStorage.getItem(CONFIG.STORAGE_KEYS.USER) ||
+                     sessionStorage.getItem(CONFIG.STORAGE_KEYS.USER);
     return userJson ? JSON.parse(userJson) : null;
   },
 
@@ -66,7 +107,8 @@ const Auth = {
    * Guardar usuario
    */
   setUser(user) {
-    localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(user));
+    const storage = this._useLocalStorage ? localStorage : sessionStorage;
+    storage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(user));
   },
 
   /**

@@ -8,18 +8,29 @@ const RutaDetalle = {
   pedidosPendientes: [],
   routeMap: null,
   optimizationData: null,
-  mapMode: 'current', // current | optimized
+  mapMode: 'current', 
+
+  /**
+   * Escapar HTML para prevenir XSS
+   */
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
 
   /**
    * Inicializar módulo
    */
   async init() {
-    // Obtener ID de la ruta desde la URL
     const params = new URLSearchParams(window.location.search);
     this.rutaId = parseInt(params.get('id'));
 
     if (!this.rutaId || isNaN(this.rutaId)) {
-      alert('ID de ruta inválido');
+      UI.showError('ID de ruta inválido');
       window.location.href = 'rutas.html';
       return;
     }
@@ -35,7 +46,6 @@ const RutaDetalle = {
    * Configurar event listeners
    */
   setupEventListeners() {
-    // Agregar parada
     document.getElementById('btnAgregarParada').addEventListener('click', () => {
       this.abrirModalParada();
     });
@@ -53,7 +63,6 @@ const RutaDetalle = {
       this.agregarParada();
     });
 
-    // Optimización
     document.getElementById('btnOptimizar')?.addEventListener('click', () => {
       this.optimizarRuta();
     });
@@ -86,12 +95,10 @@ const RutaDetalle = {
       this.renderizarInfoRuta();
       this.renderizarResumen(response.summary);
       this.renderizarParadas();
-      this.renderizarIncidencias(); // NUEVO: Renderizar incidencias
+      this.renderizarIncidencias();
 
-      // Renderizar mapa con el orden actual (si hay paradas)
       this.renderizarMapaRuta();
-      
-      // Mostrar card de optimización si hay paradas
+
       if (this.ruta?.stops?.length >= 2) {
         document.getElementById('optimizationCard').style.display = 'block';
       }
@@ -122,7 +129,6 @@ const RutaDetalle = {
     mapCard.style.display = 'block';
     msg.innerHTML = '';
 
-    // Orden actual (por ordenVisita)
     const pedidoIds = paradas
       .slice()
       .sort((a, b) => a.ordenVisita - b.ordenVisita)
@@ -138,8 +144,6 @@ const RutaDetalle = {
   async cargarPedidosPendientes() {
     console.log('🔄 Cargando pedidos pendientes...');
     try {
-      // Traer SOLO pedidos PENDIENTE sin asignar a ruta (backend: unassigned=true)
-      // y paginar para no quedar limitados por take=200.
       const take = 200;
       let skip = 0;
       const all = [];
@@ -159,7 +163,6 @@ const RutaDetalle = {
         skip += take;
       }
 
-      // Seguridad extra: si por algún motivo ya estuviera en esta ruta, lo excluimos
       const pedidosEnRuta = this.ruta?.stops?.map(s => s.pedidoId) || [];
       this.pedidosPendientes = all.filter(p => !pedidosEnRuta.includes(p.id));
       
@@ -269,16 +272,16 @@ const RutaDetalle = {
                   <td><strong>${parada.ordenVisita}</strong></td>
                   <td>#${parada.pedidoId}</td>
                   <td>
-                    <a href="javascript:void(0)" 
-                       onclick="RutaDetalle.abrirNavegacion(${parada.id})" 
+                    <a href="javascript:void(0)"
+                       onclick="RutaDetalle.abrirNavegacion(${parseInt(parada.id)})"
                        style="color: #2563eb; text-decoration: underline; font-weight: 600;">
-                      ${parada.pedido?.client?.razonSocial || '-'}
+                      ${this.escapeHtml(parada.pedido?.client?.razonSocial || '-')}
                     </a>
                   </td>
-                  <td>${parada.pedido?.client?.rut || '-'}</td>
-                  <td>${parada.pedido?.client?.direccion || '-'}</td>
-                  <td>${parada.pedido?.client?.comuna || '-'}</td>
-                  <td>${parada.pedido?.client?.telefono || '-'}</td>
+                  <td>${this.escapeHtml(parada.pedido?.client?.rut || '-')}</td>
+                  <td>${this.escapeHtml(parada.pedido?.client?.direccion || '-')}</td>
+                  <td>${this.escapeHtml(parada.pedido?.client?.comuna || '-')}</td>
+                  <td>${this.escapeHtml(parada.pedido?.client?.telefono || '-')}</td>
                   <td>${parada.pedido?.cajas || 0}</td>
                   <td class="text-center">
                     ${parada.pedido?.client?.latitud && parada.pedido?.client?.longitud
@@ -286,49 +289,43 @@ const RutaDetalle = {
                       : '<span style="color: #ef4444; font-size: 18px;" title="Sin coordenadas">✗</span>'
                     }
                   </td>
-                  <td>${UI.createBadge(parada.estadoParada, parada.estadoParada)}</td>
+                  <td>${UI.createBadge(parada.estadoParada === 'COMPLETADA' ? 'ENTREGADO' : parada.estadoParada, parada.estadoParada)}</td>
                   <td>
                     <div class="table-actions">
   ${parada.estadoParada === 'PENDIENTE' ? `
-                        <button 
-                          class="btn btn-sm btn-success btn-icon" 
+                        <button
+                          class="btn btn-sm btn-success btn-icon"
                           onclick="RutaDetalle.cambiarEstadoParada(${parada.id}, 'COMPLETADA')"
-                          title="Marcar como Completada"
+                          title="Marcar como Entregado"
                         >
                           ✅
                         </button>
-                        <button 
-                          class="btn btn-sm btn-danger btn-icon" 
+                        <button
+                          class="btn btn-sm btn-danger btn-icon"
                           onclick="RutaDetalle.abrirModalIncidencia(${parada.id}, ${parada.pedidoId})"
                           title="Reportar Incidencia"
                         >
                           🚨
                         </button>
-                        <button 
-                          class="btn btn-sm btn-danger btn-icon" 
+                        <button
+                          class="btn btn-sm btn-danger btn-icon"
                           onclick="RutaDetalle.eliminarParada(${parada.id})"
                           title="Eliminar"
                         >
                           🗑️
                         </button>
                       ` : parada.estadoParada === 'COMPLETADA' ? `
-                        <button 
-                          class="btn btn-sm btn-warning btn-icon" 
-                          onclick="RutaDetalle.cambiarEstadoParada(${parada.id}, 'PENDIENTE')"
-                          title="Marcar como Pendiente"
-                        >
-                          ↩
-                        </button>
+                        <span class="text-muted" style="font-size: 12px;">Entregado</span>
                       ` : parada.estadoParada === 'NO_ENTREGADA' ? `
-                        <button 
-                          class="btn btn-sm btn-success btn-icon" 
+                        <button
+                          class="btn btn-sm btn-success btn-icon"
                           onclick="RutaDetalle.cambiarEstadoParada(${parada.id}, 'COMPLETADA')"
-                          title="Marcar como Completada"
+                          title="Marcar como Entregado"
                         >
                           ✅
                         </button>
-                        <button 
-                          class="btn btn-sm btn-warning btn-icon" 
+                        <button
+                          class="btn btn-sm btn-warning btn-icon"
                           onclick="RutaDetalle.cambiarEstadoParada(${parada.id}, 'PENDIENTE')"
                           title="Marcar como Pendiente"
                         >
@@ -380,12 +377,10 @@ const RutaDetalle = {
     document.getElementById('modalParadaMessage').innerHTML = '';
     UI.clearForm('formParada');
 
-    // Sugerir siguiente orden de visita
     const ultimaParada = this.ruta?.stops?.length || 0;
     const ordenEl = document.getElementById('ordenVisita');
     if (ordenEl) {
       ordenEl.value = ultimaParada + 1;
-      // Lo dejamos automático para evitar conflictos de ordenVisita.
       ordenEl.readOnly = true;
     }
 
@@ -412,7 +407,6 @@ const RutaDetalle = {
     const pedidoId = parseInt(document.getElementById('pedidoId').value);
     const horaEstimada = document.getElementById('horaEstimada').value;
 
-    // Validaciones
     let hasErrors = false;
 
     if (!pedidoId || isNaN(pedidoId)) {
@@ -440,10 +434,9 @@ const RutaDetalle = {
     try {
       await API.post(`${CONFIG.ENDPOINTS.ROUTES}/${this.rutaId}/stops`, data);
 
-      document.getElementById('modalParadaMessage').innerHTML = 
+      document.getElementById('modalParadaMessage').innerHTML =
         '<div class="alert alert-success">Parada agregada correctamente</div>';
 
-      // Recargar ruta
       await this.cargarRuta();
       await this.cargarPedidosPendientes();
 
@@ -472,8 +465,7 @@ const RutaDetalle = {
       await API.delete(`${CONFIG.ENDPOINTS.ROUTES}/${this.rutaId}/stops/${stopId}`);
 
       UI.showSuccess('Parada eliminada correctamente');
-      
-      // Recargar ruta
+
       await this.cargarRuta();
       await this.cargarPedidosPendientes();
 
@@ -493,13 +485,11 @@ const RutaDetalle = {
   async optimizarRuta() {
     console.log('🚀 Iniciando optimización...');
 
-    // Verificar que haya al menos 2 paradas
     if (!this.ruta?.stops || this.ruta.stops.length < 2) {
       UI.showError('Se necesitan al menos 2 paradas para optimizar');
       return;
     }
 
-    // Verificar que todas tengan coordenadas
     const sinCoordenadas = this.ruta.stops.filter(s => 
       !s.pedido?.client?.latitud || !s.pedido?.client?.longitud
     );
@@ -513,25 +503,21 @@ const RutaDetalle = {
     UI.setButtonLoading(btnOptimizar, true);
 
     try {
-      // Obtener IDs de pedidos en orden actual
       const pedidoIds = this.ruta.stops.map(s => s.pedidoId);
 
-      // Llamar al endpoint de optimización
       const response = await API.post('/routes/optimize', { pedidoIds });
 
       console.log('✅ Optimización recibida:', response);
 
-      // CORRECCIÓN: El backend devuelve rutaOptimizada, no ruta
       if (!response.ok || !response.rutaOptimizada) {
         throw new Error('Error en la optimización');
       }
 
-      // Mapear la respuesta al formato esperado
       this.optimizationData = {
         distanciaTotal: response.rutaOptimizada.distanciaTotal,
         tiempoTotal: response.rutaOptimizada.tiempoEstimado,
-        combustibleTotal: response.rutaOptimizada.distanciaTotal * 0.12, // Número, no string
-        ahorroEstimado: Math.round(response.rutaOptimizada.distanciaTotal * 500), // $500 por km
+        combustibleTotal: response.rutaOptimizada.distanciaTotal * 0.12,
+        ahorroEstimado: Math.round(response.rutaOptimizada.distanciaTotal * 500),
         ordenOptimizado: response.rutaOptimizada.orden,
         puntos: response.rutaOptimizada.puntos
       };
@@ -557,18 +543,15 @@ const RutaDetalle = {
     const results = document.getElementById('optimizationResults');
     results.style.display = 'block';
 
-    // Actualizar métricas
     document.getElementById('metricDistance').textContent = 
       this.optimizationData.distanciaTotal.toFixed(2);
     document.getElementById('metricTime').textContent = 
       Math.round(this.optimizationData.tiempoTotal);
     document.getElementById('metricFuel').textContent = 
       this.optimizationData.combustibleTotal.toFixed(2);
-    document.getElementById('metricSavings').textContent = 
+    document.getElementById('metricSavings').textContent =
       '$' + this.optimizationData.ahorroEstimado.toLocaleString('es-CL');
 
-    // Por defecto NO cambiamos el mapa automáticamente.
-    // Se previsualiza explícitamente con el botón.
     this.mapMode = 'current';
     const btnPrev = document.getElementById('btnPrevisualizarOptimizacion');
     if (btnPrev) {
@@ -579,10 +562,8 @@ const RutaDetalle = {
     const btnCancel = document.getElementById('btnCancelarOptimizacion');
     if (btnCancel) btnCancel.disabled = false;
 
-    // Mostrar comparación de órdenes
     this.mostrarComparacionOrdenes();
 
-    // Scroll a resultados
     results.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
@@ -595,20 +576,17 @@ const RutaDetalle = {
     if (labelEl) labelEl.textContent = label;
     if (msg) msg.innerHTML = '';
 
-    // Limpiar mapa anterior
     if (this.routeMap) {
       this.routeMap.remove();
       this.routeMap = null;
     }
 
-    // Crear mapa
     this.routeMap = L.map('routeMap').setView([-42.4696, -73.7711], 10);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.routeMap);
 
-    // Agregar marcadores y líneas
     const markers = [];
     let faltanCoords = 0;
 
@@ -629,7 +607,7 @@ const RutaDetalle = {
           iconSize: [32, 32]
         })
       }).bindPopup(`
-        <strong>${parada.pedido.client.razonSocial}</strong><br>
+        <strong>${this.escapeHtml(parada.pedido.client.razonSocial)}</strong><br>
         Orden: ${index + 1}<br>
         Cajas: ${parada.pedido.cajas}
       `).addTo(this.routeMap);
@@ -641,7 +619,6 @@ const RutaDetalle = {
       msg.innerHTML = `<div class="alert alert-warning">⚠️ ${faltanCoords} parada(s) no tienen coordenadas. El mapa muestra solo las que sí tienen georreferencia.</div>`;
     }
 
-    // Dibujar línea de ruta
     if (markers.length > 1) {
       L.polyline(markers, {
         color: '#2563eb',
@@ -650,7 +627,6 @@ const RutaDetalle = {
       }).addTo(this.routeMap);
     }
 
-    // Ajustar vista
     if (markers.length > 0) {
       this.routeMap.fitBounds(markers, { padding: [50, 50] });
     }
@@ -668,7 +644,6 @@ const RutaDetalle = {
     const btnPrev = document.getElementById('btnPrevisualizarOptimizacion');
 
     if (this.mapMode === 'optimized') {
-      // Volver al orden actual
       const pedidoIds = (this.ruta?.stops || [])
         .slice()
         .sort((a, b) => a.ordenVisita - b.ordenVisita)
@@ -680,7 +655,6 @@ const RutaDetalle = {
       return;
     }
 
-    // Mostrar orden optimizado
     this.mapMode = 'optimized';
     this.renderRouteMap(this.optimizationData.ordenOptimizado, 'Vista: Orden optimizado');
     if (btnPrev) btnPrev.textContent = '↩️ Volver a orden actual';
@@ -690,7 +664,6 @@ const RutaDetalle = {
    * Cancelar optimización (sin aplicar cambios)
    */
   cancelarOptimizacion() {
-    // Ocultar resultados y limpiar estado
     document.getElementById('optimizationResults').style.display = 'none';
     this.optimizationData = null;
     this.mapMode = 'current';
@@ -704,7 +677,6 @@ const RutaDetalle = {
     const btnCancel = document.getElementById('btnCancelarOptimizacion');
     if (btnCancel) btnCancel.disabled = true;
 
-    // Volver a mapa en orden actual
     this.renderizarMapaRuta();
     UI.showSuccess('Optimización cancelada');
   },
@@ -713,7 +685,6 @@ const RutaDetalle = {
    * Mostrar comparación de órdenes
    */
   mostrarComparacionOrdenes() {
-    // Orden actual
     const currentList = document.getElementById('currentOrderList');
     currentList.innerHTML = this.ruta.stops
       .sort((a, b) => a.ordenVisita - b.ordenVisita)
@@ -722,15 +693,14 @@ const RutaDetalle = {
           <div style="display: flex; align-items: center; flex: 1;">
             <div class="stop-order">${parada.ordenVisita}</div>
             <div>
-              <strong>${parada.pedido.client.razonSocial}</strong><br>
-              <small style="color: #6b7280;">${parada.pedido.client.comuna}</small>
+              <strong>${this.escapeHtml(parada.pedido.client.razonSocial)}</strong><br>
+              <small style="color: #6b7280;">${this.escapeHtml(parada.pedido.client.comuna)}</small>
             </div>
           </div>
           <div style="color: #6b7280;">${parada.pedido.cajas} cajas</div>
         </div>
       `).join('');
 
-    // Orden optimizado
     const optimizedList = document.getElementById('optimizedOrderList');
     optimizedList.innerHTML = this.optimizationData.ordenOptimizado
       .map((pedidoId, index) => {
@@ -740,8 +710,8 @@ const RutaDetalle = {
             <div style="display: flex; align-items: center; flex: 1;">
               <div class="stop-order">${index + 1}</div>
               <div>
-                <strong>${parada.pedido.client.razonSocial}</strong><br>
-                <small style="color: #6b7280;">${parada.pedido.client.comuna}</small>
+                <strong>${this.escapeHtml(parada.pedido.client.razonSocial)}</strong><br>
+                <small style="color: #6b7280;">${this.escapeHtml(parada.pedido.client.comuna)}</small>
               </div>
             </div>
             <div style="color: #6b7280;">${parada.pedido.cajas} cajas</div>
@@ -764,8 +734,6 @@ const RutaDetalle = {
     UI.setButtonLoading(btnAplicar, true);
 
     try {
-      // PASO 1: Mover todas las paradas a órdenes temporales altos (1000+)
-      // para evitar conflictos de duplicados
       console.log('🔄 Paso 1: Asignando órdenes temporales...');
       for (let i = 0; i < this.ruta.stops.length; i++) {
         const parada = this.ruta.stops[i];
@@ -776,7 +744,6 @@ const RutaDetalle = {
 
       console.log('✅ Paso 1 completado');
 
-      // PASO 2: Actualizar cada parada con su nuevo orden definitivo
       console.log('🔄 Paso 2: Aplicando orden optimizado...');
       for (let i = 0; i < this.optimizationData.ordenOptimizado.length; i++) {
         const pedidoId = this.optimizationData.ordenOptimizado[i];
@@ -792,14 +759,11 @@ const RutaDetalle = {
       console.log('✅ Paso 2 completado');
 
       UI.showSuccess('Orden optimizado aplicado correctamente');
-      
-      // Recargar ruta
+
       await this.cargarRuta();
 
-      // Ocultar resultados
       document.getElementById('optimizationResults').style.display = 'none';
 
-      // Reset estado de optimización
       this.optimizationData = null;
       this.mapMode = 'current';
 
@@ -836,8 +800,7 @@ const RutaDetalle = {
     document.getElementById('incidenciaPedidoId').value = pedidoId;
     document.getElementById('incidenciaCliente').textContent = parada.pedido.client.razonSocial;
     document.getElementById('modalIncidenciaMessage').innerHTML = '';
-    
-    // Limpiar formulario
+
     document.getElementById('formIncidencia').reset();
     
     modal.style.display = 'block';
@@ -861,7 +824,6 @@ const RutaDetalle = {
     const paradaId = parseInt(document.getElementById('incidenciaParadaId').value);
     const pedidoId = parseInt(document.getElementById('incidenciaPedidoId').value);
     const tipo = document.getElementById('incidenciaTipo').value;
-    const severidad = document.getElementById('incidenciaSeveridad').value;
     const descripcion = document.getElementById('incidenciaDescripcion').value.trim();
 
     if (!tipo || !descripcion) {
@@ -874,20 +836,19 @@ const RutaDetalle = {
     UI.setButtonLoading(btnGuardar, true);
 
     try {
-      // Actualizar la parada a NO_ENTREGADA con incidencia
       await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.rutaId}/stops/${paradaId}`, {
         estadoParada: 'NO_ENTREGADA',
         incidente: {
           tipo,
-          descripcion,
-          severidad
+          descripcion
         }
       });
 
-      document.getElementById('modalIncidenciaMessage').innerHTML = 
+      document.getElementById('modalIncidenciaMessage').innerHTML =
         '<div class="alert alert-success">Incidencia reportada correctamente</div>';
 
-      // Recargar ruta
+      UI.showAlert('Incidencia reportada correctamente', 'success', 3000);
+
       await this.cargarRuta();
 
       setTimeout(() => {
@@ -896,8 +857,10 @@ const RutaDetalle = {
 
     } catch (error) {
       console.error('❌ Error al reportar incidencia:', error);
-      document.getElementById('modalIncidenciaMessage').innerHTML = 
-        `<div class="alert alert-danger">${error.message || 'Error al reportar incidencia'}</div>`;
+      const mensaje = error.message || 'Error al reportar incidencia';
+      document.getElementById('modalIncidenciaMessage').innerHTML =
+        `<div class="alert alert-danger">${mensaje}</div>`;
+      UI.showAlert(mensaje, 'error');
     } finally {
       UI.setButtonLoading(btnGuardar, false);
     }
@@ -918,35 +881,39 @@ const RutaDetalle = {
     }
 
     const html = incidencias.map(inc => {
-      const severidadColor = {
-        'BAJA': '#10b981',
-        'MEDIA': '#f59e0b',
-        'ALTA': '#ef4444',
-        'CRITICA': '#7c3aed'
-      }[inc.severidad] || '#6b7280';
+      const estadoConfig = {
+        'ABIERTA': { color: '#ef4444', texto: 'Abierta' },
+        'EN_REVISION': { color: '#f59e0b', texto: 'En Revisión' },
+        'CERRADA': { color: '#10b981', texto: 'Cerrada' }
+      }[inc.estado] || { color: '#6b7280', texto: inc.estado };
 
       return `
-        <div style="border-left: 4px solid ${severidadColor}; padding: 16px; background: #f9fafb; border-radius: 8px; margin-bottom: 12px;">
+        <div style="border-left: 4px solid ${estadoConfig.color}; padding: 16px; background: #f9fafb; border-radius: 8px; margin-bottom: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
             <div>
               <strong style="font-size: 15px;">${inc.tipo}</strong>
-              <span style="background: ${severidadColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">
-                ${inc.severidad}
+              <span style="background: ${estadoConfig.color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">
+                ${estadoConfig.texto}
               </span>
             </div>
             <span style="color: #6b7280; font-size: 13px;">${UI.formatDate(inc.createdAt)}</span>
           </div>
           <p style="margin: 8px 0; color: #374151;">${inc.descripcion}</p>
           <div style="color: #6b7280; font-size: 13px;">
-            Pedido #${inc.pedidoId} • Reportado por: ${inc.createdBy?.nombre || 'Sistema'}
+            ${inc.pedidoId ? `Pedido #${inc.pedidoId} • ` : ''}Reportado por: ${inc.createdBy?.nombre || 'Sistema'}
           </div>
+          ${inc.comentarioResolucion ? `
+          <div style="margin-top: 8px; padding: 8px; background: #e5e7eb; border-radius: 4px; font-size: 13px;">
+            <strong>Resolución:</strong> ${inc.comentarioResolucion}
+            ${inc.reviewedBy ? `<br><small>Por: ${inc.reviewedBy.nombre}</small>` : ''}
+          </div>
+          ` : ''}
         </div>
       `;
     }).join('');
 
     container.innerHTML = html;
 
-    // Actualizar badge de contador
     const badge = document.getElementById('incidenciasBadge');
     if (badge) {
       badge.textContent = incidencias.length;
@@ -960,7 +927,7 @@ const RutaDetalle = {
   async cambiarEstadoParada(paradaId, nuevoEstado) {
     const estadosTexto = {
       'PENDIENTE': 'pendiente',
-      'COMPLETADA': 'completada',
+      'COMPLETADA': 'entregada',
       'NO_ENTREGADA': 'no entregada'
     };
 
@@ -973,14 +940,14 @@ const RutaDetalle = {
         estadoParada: nuevoEstado
       });
 
-      UI.showSuccess(`Parada marcada como ${estadosTexto[nuevoEstado]}`);
-      
-      // Recargar ruta
+      UI.showAlert(`Parada marcada como ${estadosTexto[nuevoEstado]}`, 'success', 3000);
+
       await this.cargarRuta();
 
     } catch (error) {
       console.error('❌ Error al cambiar estado:', error);
-      UI.showError('Error al cambiar el estado de la parada');
+      const mensaje = error?.message || 'Error al cambiar el estado de la parada';
+      UI.showAlert(mensaje, 'error');
     }
   },
 
@@ -994,7 +961,6 @@ const RutaDetalle = {
           return;
         }
 
-        // Preferir coordenadas si existen
         let destination = '';
         if (client.latitud && client.longitud) {
           destination = `${client.latitud},${client.longitud}`;

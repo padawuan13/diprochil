@@ -9,31 +9,27 @@ const updateStatusSchema = z.object({
 export async function handleUpdateRouteStatus(req: Request, res: Response) {
   const routeId = Number(req.params.id);
   if (!Number.isFinite(routeId)) {
-    return res.status(400).json({ ok: false, message: "Invalid route id" });
+    return res.status(400).json({ ok: false, message: "ID de ruta inválido" });
   }
 
   const parsed = updateStatusSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ ok: false, message: "Invalid body", issues: parsed.error.issues });
+    return res.status(400).json({ ok: false, message: "Datos inválidos", issues: parsed.error.issues });
   }
 
   const user = (req as any).user as { id: number; role: string } | undefined;
-  if (!user) return res.status(401).json({ ok: false, message: "Unauthorized" });
+  if (!user) return res.status(401).json({ ok: false, message: "No autorizado" });
 
   const route = await prisma.route.findUnique({ where: { id: routeId } });
-  if (!route) return res.status(404).json({ ok: false, message: "Route not found" });
+  if (!route) return res.status(404).json({ ok: false, message: "Ruta no encontrada" });
 
-  // Si es CONDUCTOR: solo puede modificar sus rutas
   if (user.role === "CONDUCTOR" && route.conductorId !== user.id) {
-    return res.status(403).json({ ok: false, message: "Forbidden (not your route)" });
+    return res.status(403).json({ ok: false, message: "No tienes permiso para modificar esta ruta" });
   }
 
   const next = parsed.data.estado;
   const current = route.estado;
 
-  // Validación de transición (workflow)
-  // - Conductores: solo pueden avanzar PROGRAMADA -> EN_CURSO -> FINALIZADA (no cancelar)
-  // - Backoffice (ADMIN/PLANIFICADOR/SUPERVISOR): pueden CANCELAR desde PROGRAMADA o EN_CURSO
   const allowedConductor: Record<string, string[]> = {
     PROGRAMADA: ["EN_CURSO"],
     EN_CURSO: ["FINALIZADA"],
@@ -52,13 +48,31 @@ export async function handleUpdateRouteStatus(req: Request, res: Response) {
   const options = allowed[current] ?? [];
 
   if (!options.includes(next)) {
+    const estadoActual = current === "PROGRAMADA" ? "programada" : current === "EN_CURSO" ? "en curso" : current.toLowerCase();
     return res.status(409).json({
       ok: false,
-      message: "Invalid status transition",
+      message: `No se puede cambiar de estado. La ruta está ${estadoActual} y no permite esta transición.`,
       current,
       next,
       allowedNext: options,
     });
+  }
+
+  if (next === "FINALIZADA") {
+    const paradasPendientes = await prisma.routeStop.count({
+      where: {
+        routeId,
+        estadoParada: { in: ["PENDIENTE", "EN_CURSO"] },
+      },
+    });
+
+    if (paradasPendientes > 0) {
+      return res.status(409).json({
+        ok: false,
+        message: `No se puede finalizar la ruta. Hay ${paradasPendientes} parada(s) pendiente(s) o en curso.`,
+        paradasPendientes,
+      });
+    }
   }
 
   const updated = await prisma.route.update({

@@ -1,12 +1,211 @@
 import { prisma } from "../../lib/prisma";
-import { UserRole, VehicleStatus, ParadaEstado } from "@prisma/client";
-import type { RutaEstado, IncidenciaSeveridad, UserRole as UserRoleType } from "@prisma/client";
+import { UserRole, VehicleStatus, ParadaEstado, RutaEstado as RutaEstadoEnum } from "@prisma/client";
+import type { RutaEstado, UserRole as UserRoleType } from "@prisma/client";
+
+export async function cleanupOldRoutes() {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  try {
+    await prisma.routeStop.deleteMany({
+      where: {
+        route: {
+          estado: { in: [RutaEstadoEnum.FINALIZADA, RutaEstadoEnum.CANCELADA] },
+          updatedAt: { lt: sevenDaysAgo },
+        },
+      },
+    });
+
+    await prisma.incident.deleteMany({
+      where: {
+        route: {
+          estado: { in: [RutaEstadoEnum.FINALIZADA, RutaEstadoEnum.CANCELADA] },
+          updatedAt: { lt: sevenDaysAgo },
+        },
+      },
+    });
+
+    const deleted = await prisma.route.deleteMany({
+      where: {
+        estado: { in: [RutaEstadoEnum.FINALIZADA, RutaEstadoEnum.CANCELADA] },
+        updatedAt: { lt: sevenDaysAgo },
+      },
+    });
+
+    if (deleted.count > 0) {
+      console.log(`🧹 Auto-limpieza: ${deleted.count} rutas antiguas eliminadas`);
+    }
+
+    return deleted.count;
+  } catch (error) {
+    console.error("Error en auto-limpieza de rutas:", error);
+    return 0;
+  }
+}
 
 type Actor = { id: number; role: UserRoleType };
 
 function timeToDate(t: string): Date {
   const tt = t.length === 5 ? `${t}:00` : t;
   return new Date(`1970-01-01T${tt}.000Z`);
+}
+
+export async function getConductoresConCarga(fecha: Date) {
+  const conductores = await prisma.user.findMany({
+    where: {
+      role: UserRole.CONDUCTOR,
+      active: true,
+    },
+    select: {
+      id: true,
+      nombre: true,
+      email: true,
+    },
+  });
+
+  const fechaInicio = new Date(fecha);
+  fechaInicio.setUTCHours(0, 0, 0, 0);
+  const fechaFin = new Date(fecha);
+  fechaFin.setUTCHours(23, 59, 59, 999);
+
+  const conductoresConCarga = await Promise.all(
+    conductores.map(async (conductor) => {
+      const rutas = await prisma.route.findMany({
+        where: {
+          conductorId: conductor.id,
+          fechaRuta: { gte: fechaInicio, lte: fechaFin },
+          estado: { notIn: [RutaEstadoEnum.CANCELADA] },
+        },
+        include: {
+          _count: { select: { stops: true } },
+        },
+      });
+
+      const totalRutas = rutas.length;
+      const totalParadas = rutas.reduce((sum, r) => sum + r._count.stops, 0);
+
+      return {
+        ...conductor,
+        totalRutas,
+        totalParadas,
+        carga: totalParadas * 10 + totalRutas,
+      };
+    })
+  );
+
+  conductoresConCarga.sort((a, b) => a.carga - b.carga);
+
+  return conductoresConCarga;
+}
+
+export async function autoAsignarConductor(fecha: Date, zona?: string) {
+  const conductores = await getConductoresConCarga(fecha);
+
+  if (conductores.length === 0) {
+    return null;
+  }
+
+  if (zona) {
+    const fechaInicio = new Date(fecha);
+    fechaInicio.setUTCHours(0, 0, 0, 0);
+    const fechaFin = new Date(fecha);
+    fechaFin.setUTCHours(23, 59, 59, 999);
+
+    const rutaExistenteZona = await prisma.route.findFirst({
+      where: {
+        zona: zona,
+        fechaRuta: { gte: fechaInicio, lte: fechaFin },
+        estado: { notIn: [RutaEstadoEnum.CANCELADA, RutaEstadoEnum.FINALIZADA] },
+      },
+      select: { conductorId: true, vehicleId: true, id: true },
+    });
+
+    if (rutaExistenteZona) {
+      return {
+        conductorId: rutaExistenteZona.conductorId,
+        vehicleId: rutaExistenteZona.vehicleId,
+        rutaExistenteId: rutaExistenteZona.id,
+        razon: "ruta_existente_zona",
+      };
+    }
+  }
+
+  return {
+    conductorId: conductores[0].id,
+    vehicleId: null,
+    rutaExistenteId: null,
+    razon: "menor_carga",
+  };
+}
+
+export async function getVehiculosDisponibles(fecha: Date) {
+  const vehiculos = await prisma.vehicle.findMany({
+    where: { estado: VehicleStatus.ACTIVO },
+    select: { id: true, patente: true, tipo: true },
+  });
+
+  const fechaInicio = new Date(fecha);
+  fechaInicio.setUTCHours(0, 0, 0, 0);
+  const fechaFin = new Date(fecha);
+  fechaFin.setUTCHours(23, 59, 59, 999);
+
+  const rutasDelDia = await prisma.route.findMany({
+    where: {
+      fechaRuta: { gte: fechaInicio, lte: fechaFin },
+      estado: { notIn: [RutaEstadoEnum.CANCELADA] },
+    },
+    select: { vehicleId: true },
+  });
+
+  const vehiculosUsados = new Set(rutasDelDia.map(r => r.vehicleId));
+
+  const disponibles = vehiculos.filter(v => !vehiculosUsados.has(v.id));
+  const enUso = vehiculos.filter(v => vehiculosUsados.has(v.id));
+
+  return { disponibles, enUso, todos: vehiculos };
+}
+
+export async function autoAsignarConductorYVehiculo(fecha: Date, zona?: string) {
+  const asignacion = await autoAsignarConductor(fecha, zona);
+
+  if (!asignacion) {
+    return null;
+  }
+
+  if (asignacion.vehicleId) {
+    return asignacion;
+  }
+
+  const fechaInicio = new Date(fecha);
+  fechaInicio.setUTCHours(0, 0, 0, 0);
+  const fechaFin = new Date(fecha);
+  fechaFin.setUTCHours(23, 59, 59, 999);
+
+  const rutaConductor = await prisma.route.findFirst({
+    where: {
+      conductorId: asignacion.conductorId,
+      fechaRuta: { gte: fechaInicio, lte: fechaFin },
+      estado: { notIn: [RutaEstadoEnum.CANCELADA] },
+    },
+    select: { vehicleId: true },
+  });
+
+  if (rutaConductor) {
+    return { ...asignacion, vehicleId: rutaConductor.vehicleId };
+  }
+
+  const { disponibles } = await getVehiculosDisponibles(fecha);
+
+  if (disponibles.length > 0) {
+    return { ...asignacion, vehicleId: disponibles[0].id };
+  }
+
+  const todosVehiculos = await prisma.vehicle.findFirst({
+    where: { estado: VehicleStatus.ACTIVO },
+    select: { id: true },
+  });
+
+  return { ...asignacion, vehicleId: todosVehiculos?.id || null };
 }
 
 export async function listRoutes(params: {
@@ -18,6 +217,8 @@ export async function listRoutes(params: {
   dateFrom?: Date;
   dateTo?: Date;
 }) {
+  cleanupOldRoutes().catch(() => {});
+
   const where: any = {};
 
   if (params.estado) where.estado = params.estado;
@@ -26,8 +227,18 @@ export async function listRoutes(params: {
 
   if (params.dateFrom || params.dateTo) {
     where.fechaRuta = {};
-    if (params.dateFrom) where.fechaRuta.gte = params.dateFrom;
-    if (params.dateTo) where.fechaRuta.lte = params.dateTo;
+    if (params.dateFrom) {
+      // Ajustar al inicio del día para incluir cualquier hora de ese día
+      const fromDate = new Date(params.dateFrom);
+      fromDate.setUTCHours(0, 0, 0, 0);
+      where.fechaRuta.gte = fromDate;
+    }
+    if (params.dateTo) {
+      // Ajustar al final del día para incluir cualquier hora de ese día
+      const toDate = new Date(params.dateTo);
+      toDate.setUTCHours(23, 59, 59, 999);
+      where.fechaRuta.lte = toDate;
+    }
   }
 
   const [items, total] = await Promise.all([
@@ -200,7 +411,6 @@ export async function updateStop(
     incidente?: {
       tipo: string;
       descripcion: string;
-      severidad?: IncidenciaSeveridad;
     };
   },
   actor?: Actor
@@ -259,8 +469,6 @@ export async function updateStop(
       include: { pedido: { include: { client: true } } },
     });
 
-        // ✅ Sincronizar estado del Pedido con el estado de la Parada
-        // Esto evita que Pedidos quede "PENDIENTE" cuando ya fue entregado/no entregado en la ruta.
         if (input.estadoParada !== undefined) {
           const nextPedidoEstado =
             input.estadoParada === ParadaEstado.COMPLETADA
@@ -284,7 +492,7 @@ export async function updateStop(
           createdById: actor!.id,
           tipo: input.incidente!.tipo,
           descripcion: input.incidente!.descripcion,
-          ...(input.incidente!.severidad !== undefined ? { severidad: input.incidente!.severidad } : {}),
+          estado: "ABIERTA",
         },
       });
     }
@@ -311,9 +519,46 @@ export async function deleteStop(routeId: number, stopId: number) {
   return { deleted: true };
 }
 
-/**
- * Importar Excel y crear rutas automáticamente por comuna
- */
+export async function deleteRoute(routeId: number, deletePedidos: boolean = false) {
+  const route = await prisma.route.findUnique({
+    where: { id: routeId },
+    include: {
+      stops: { select: { id: true, pedidoId: true } },
+      incidents: { select: { id: true } },
+    },
+  });
+
+  if (!route) {
+    const err: any = new Error("Route not found");
+    err.status = 404;
+    throw err;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const pedidoIds = route.stops.map(s => s.pedidoId);
+
+    await tx.incident.deleteMany({ where: { routeId } });
+    await tx.routeStop.deleteMany({ where: { routeId } });
+    await tx.route.delete({ where: { id: routeId } });
+
+    if (deletePedidos && pedidoIds.length > 0) {
+      await tx.pedidoDetalle.deleteMany({
+        where: { pedidoId: { in: pedidoIds } },
+      });
+      await tx.pedido.deleteMany({
+        where: { id: { in: pedidoIds } },
+      });
+    }
+  });
+
+  return {
+    deleted: true,
+    stopsDeleted: route.stops.length,
+    incidentsDeleted: route.incidents.length,
+    pedidosDeleted: deletePedidos ? route.stops.length : 0,
+  };
+}
+
 export async function importarExcelConRutas(
   buffer: Buffer,
   fechaCompromiso: Date | undefined,
@@ -324,7 +569,6 @@ export async function importarExcelConRutas(
   }>,
   groupBy: import("./routes.import.service").GroupByZona = "comuna"
 ) {
-  // 1. Parsear Excel y obtener preview
   const { previewExcelRutas } = await import("./routes.import.service");
   const preview = await previewExcelRutas(buffer, groupBy);
   
@@ -340,12 +584,10 @@ export async function importarExcelConRutas(
   let rutasCreadas = 0;
   let paradasCreadas = 0;
 
-  // 2. Crear pedidos y rutas por cada comuna seleccionada
   for (const rutaComuna of rutasPorComuna) {
     const config = comunasACrear.get(rutaComuna.comuna);
-    if (!config) continue; // Si la comuna no está seleccionada, skip
+    if (!config) continue;
 
-    // Validar conductor
     const conductor = await prisma.user.findUnique({
       where: { id: config.conductorId },
       select: { id: true, role: true, active: true },
@@ -355,7 +597,6 @@ export async function importarExcelConRutas(
       throw new Error(`Conductor inválido para comuna ${rutaComuna.comuna}`);
     }
 
-    // Validar vehículo
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: config.vehicleId },
       select: { id: true, estado: true },
@@ -365,7 +606,6 @@ export async function importarExcelConRutas(
       throw new Error(`Vehículo inválido para comuna ${rutaComuna.comuna}`);
     }
 
-    // Crear la ruta
     const rutaCreada = await prisma.route.create({
       data: {
         conductorId: config.conductorId,
@@ -378,7 +618,6 @@ export async function importarExcelConRutas(
 
     rutasCreadas++;
 
-    // Crear pedidos y paradas
     let orden = 1;
     for (const cliente of rutaComuna.clientes) {
       // Crear pedido

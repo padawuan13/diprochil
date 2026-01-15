@@ -8,6 +8,18 @@
 const Rutas = {
   rutas: [],
 
+  /**
+   * Escapar HTML para prevenir XSS
+   */
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   async init() {
     this.setupEventListeners();
     await this.cargarRutas();
@@ -27,7 +39,6 @@ const Rutas = {
       const response = await API.get(CONFIG.ENDPOINTS.ROUTES, { take: 200 });
 
       this.rutas = response.items || [];
-      // Más recientes primero
       this.rutas.sort((a, b) => b.id - a.id);
 
       console.log('✅ Rutas cargadas:', this.rutas.length);
@@ -46,12 +57,10 @@ const Rutas = {
 
     let items = [...this.rutas];
 
-    // Filtrar por estado (si hay selección)
     if (estadoFilter) {
       items = items.filter(r => r.estado === estadoFilter);
     }
 
-    // Filtrar por búsqueda
     if (searchTerm) {
       items = items.filter(r => {
         const coincideId = String(r.id || '').includes(searchTerm);
@@ -97,9 +106,9 @@ const Rutas = {
               <tr>
                 <td><strong>#${ruta.id}</strong></td>
                 <td>${UI.formatDate(ruta.fechaRuta)}</td>
-                <td>${ruta.conductor?.nombre || 'Sin asignar'}</td>
-                <td>${ruta.vehicle?.patente || 'Sin vehículo'}</td>
-                <td>${ruta.zona || '-'}</td>
+                <td>${this.escapeHtml(ruta.conductor?.nombre || 'Sin asignar')}</td>
+                <td>${this.escapeHtml(ruta.vehicle?.patente || 'Sin vehículo')}</td>
+                <td>${this.escapeHtml(ruta.zona || '-')}</td>
                 <td>${ruta.stops?.length || 0}</td>
                 <td>${UI.createBadge(ruta.estado, ruta.estado)}</td>
                 <td>
@@ -132,13 +141,13 @@ const Rutas = {
                       </button>
                     ` : ''}
 
-                    ${canCancel && (ruta.estado === 'PROGRAMADA' || ruta.estado === 'EN_CURSO') ? `
+                    ${canCancel ? `
                       <button
                         class="btn btn-sm btn-danger btn-icon"
-                        onclick="Rutas.cambiarEstado(${ruta.id}, 'CANCELADA')"
-                        title="Cancelar Ruta"
+                        onclick="Rutas.eliminarRuta(${ruta.id})"
+                        title="Eliminar Ruta"
                       >
-                        ✖️
+                        🗑️
                       </button>
                     ` : ''}
                   </div>
@@ -168,7 +177,34 @@ const Rutas = {
       UI.showSuccess(`Ruta marcada como ${estadoTexto}`);
     } catch (error) {
       console.error('Error al cambiar estado:', error);
-      UI.showError('Error al cambiar el estado de la ruta');
+      const mensaje = error?.message || 'Error al cambiar el estado de la ruta';
+      UI.showAlert(mensaje, 'error');
+    }
+  },
+
+  async eliminarRuta(id) {
+    if (!UI.confirm('¿Estás seguro de que deseas eliminar esta ruta?')) return;
+
+    const eliminarPedidos = UI.confirm(
+      '¿Deseas eliminar también los pedidos asociados a esta ruta?\n\n' +
+      '• SÍ (Aceptar): Se eliminarán la ruta Y sus pedidos\n' +
+      '• NO (Cancelar): Solo se elimina la ruta, los pedidos quedan disponibles'
+    );
+
+    try {
+      const endpoint = `${CONFIG.ENDPOINTS.ROUTES}/${id}${eliminarPedidos ? '?deletePedidos=true' : ''}`;
+      await API.delete(endpoint);
+      await this.cargarRutas();
+
+      if (eliminarPedidos) {
+        UI.showSuccess('Ruta y pedidos eliminados correctamente');
+      } else {
+        UI.showSuccess('Ruta eliminada correctamente');
+      }
+    } catch (error) {
+      console.error('Error al eliminar ruta:', error);
+      const mensaje = error?.message || 'Error al eliminar la ruta';
+      UI.showAlert(mensaje, 'error');
     }
   },
 };

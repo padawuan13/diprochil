@@ -9,13 +9,7 @@ export async function listPedidos(params: {
   search?: string;
   unassigned?: boolean;
 }) {
-  // ✅ Auto-sincronización de estados (corrige datos antiguos):
-  // Solo tiene sentido cuando estamos listando PENDIENTE o sin filtro.
   if (params.estado === undefined || params.estado === "PENDIENTE") {
-    // Si un pedido sigue en PENDIENTE pero su parada ya está COMPLETADA/NO_ENTREGADA,
-    // actualizamos su estado para que Pedidos/Reportes reflejen la realidad.
-    // - Primero ENTREGADO (por COMPLETADA)
-    // - Luego NO_ENTREGADO (por NO_ENTREGADA) solo para los que aún siguen PENDIENTE
     await prisma.pedido.updateMany({
       where: {
         estado: "PENDIENTE",
@@ -37,7 +31,7 @@ export async function listPedidos(params: {
 
   if (params.estado) where.estado = params.estado;
   if (params.clientId) where.clientId = params.clientId;
-  if (params.unassigned === true) where.stops = { none: {} }; // sin paradas asignadas
+  if (params.unassigned === true) where.stops = { none: {} };
 
   if (params.search) {
     const s = params.search;
@@ -53,8 +47,6 @@ export async function listPedidos(params: {
       where,
       include: {
         client: true,
-        // Para reflejar en UI la asignación (ruta/conductor/vehículo)
-        // tomamos la última parada (si existe)
         stops: {
           take: 1,
           orderBy: { id: "desc" },
@@ -133,19 +125,7 @@ export async function updatePedido(
   });
 }
 
-/**
- * Eliminar un pedido.
- * Regla:
- * - Se permite eliminar aunque esté asignado a una ruta.
- *   En ese caso se eliminan primero sus paradas (RouteStop) para evitar
- *   que el pedido "salga a reparto" por error.
- * - NO se permite eliminar si tiene incidencias asociadas ABIERTAS o EN_REVISION.
- *   Si las incidencias están CERRADAS, se desasocian (pedidoId = null) para
- *   mantener trazabilidad sin bloquear la eliminación.
- */
 export async function deletePedido(id: number) {
-  // ✅ Se permite eliminar el pedido si las incidencias asociadas están CERRADAS.
-  // Si existe alguna incidencia ABIERTA o EN_REVISION, se bloquea (409) para no perder trazabilidad.
   const openIncidentsCount = await prisma.incident.count({
     where: {
       pedidoId: id,
@@ -161,11 +141,7 @@ export async function deletePedido(id: number) {
     throw err;
   }
 
-  // Transacción para mantener consistencia: si está asignado a una ruta,
-  // eliminamos primero su(s) parada(s) y reindexamos el orden de visita.
   return prisma.$transaction(async (tx) => {
-    // 0) Si hay incidencias CERRADAS asociadas, se desasocian del pedido
-    // para permitir borrar el pedido sin romper la integridad referencial.
     await tx.incident.updateMany({
       where: { pedidoId: id },
       data: { pedidoId: null },
@@ -178,11 +154,9 @@ export async function deletePedido(id: number) {
 
     const affectedRouteIds = Array.from(new Set(stops.map((s) => s.routeId)));
 
-    // 1) Quitar asignación de rutas (si existe)
     if (affectedRouteIds.length > 0) {
       await tx.routeStop.deleteMany({ where: { pedidoId: id } });
 
-      // 2) Reindexar orden de visita para evitar huecos (mantiene el orden relativo)
       for (const routeId of affectedRouteIds) {
         const remaining = await tx.routeStop.findMany({
           where: { routeId },
@@ -190,8 +164,6 @@ export async function deletePedido(id: number) {
           select: { id: true },
         });
 
-        // Paso A: asignar temporalmente valores negativos para evitar colisiones
-        // (usamos entries() para evitar TS2532 con noUncheckedIndexedAccess)
         for (const [i, stop] of remaining.entries()) {
           await tx.routeStop.update({
             where: { id: stop.id },
@@ -199,7 +171,6 @@ export async function deletePedido(id: number) {
           });
         }
 
-        // Paso B: asignar 1..N definitivo
         for (const [i, stop] of remaining.entries()) {
           await tx.routeStop.update({
             where: { id: stop.id },
@@ -209,7 +180,6 @@ export async function deletePedido(id: number) {
       }
     }
 
-    // Nota: PedidoDetalle tiene onDelete: Cascade.
     return tx.pedido.delete({
       where: { id },
       include: { client: true },

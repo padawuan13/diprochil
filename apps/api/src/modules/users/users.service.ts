@@ -58,11 +58,13 @@ export async function listUsers(params: {
 
 export async function updateUser(id: number, input: {
   nombre?: string;
+  email?: string;
   role?: UserRole;
   active?: boolean;
 }) {
   const data: any = {};
   if (input.nombre !== undefined) data.nombre = input.nombre.trim();
+  if (input.email !== undefined) data.email = input.email.toLowerCase().trim();
   if (input.role !== undefined) data.role = input.role;
   if (input.active !== undefined) data.active = input.active;
 

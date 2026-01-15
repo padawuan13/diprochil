@@ -13,7 +13,7 @@ export async function handleListClients(req: Request, res: Response) {
   if (!parsed.success) {
     return res.status(400).json({
       ok: false,
-      message: "Invalid query params",
+      message: "Parametros de consulta invalidos",
       issues: parsed.error.issues,
     });
   }
@@ -37,7 +37,7 @@ export async function handleGetClient(req: Request, res: Response) {
   const id = Number(req.params.id);
   
   if (!Number.isFinite(id)) {
-    return res.status(400).json({ ok: false, message: "Invalid id" });
+    return res.status(400).json({ ok: false, message: "ID invalido" });
   }
 
   try {
@@ -46,7 +46,7 @@ export async function handleGetClient(req: Request, res: Response) {
     });
 
     if (!client) {
-      return res.status(404).json({ ok: false, message: "Client not found" });
+      return res.status(404).json({ ok: false, message: "Cliente no encontrado" });
     }
 
     return res.json({ ok: true, item: client });
@@ -61,7 +61,7 @@ export async function handleCreateClient(req: Request, res: Response) {
   if (!parsed.success) {
     return res.status(400).json({
       ok: false,
-      message: "Invalid body",
+      message: "Datos invalidos",
       issues: parsed.error.issues,
     });
   }
@@ -79,8 +79,8 @@ export async function handleCreateClient(req: Request, res: Response) {
       ...(b.direccion !== undefined ? { direccion: b.direccion } : {}),
       ...(b.isla !== undefined ? { isla: b.isla } : {}),
       ...(b.active !== undefined ? { active: b.active } : {}),
-      ...(b.latitud !== undefined ? { latitud: b.latitud } : {}),  // ← AGREGADO
-      ...(b.longitud !== undefined ? { longitud: b.longitud } : {}), // ← AGREGADO
+      ...(b.latitud !== undefined ? { latitud: b.latitud } : {}),
+      ...(b.longitud !== undefined ? { longitud: b.longitud } : {}),
     };
 
     const created = await createClient(input);
@@ -89,7 +89,7 @@ export async function handleCreateClient(req: Request, res: Response) {
     if (err?.code === "P2002") {
       return res.status(409).json({
         ok: false,
-        message: "Client already exists (rut must be unique)",
+        message: "El cliente ya existe (el RUT debe ser unico)",
       });
     }
     throw err;
@@ -102,34 +102,33 @@ export async function handleImportClients(req: Request, res: Response) {
   if (!file) {
     return res
       .status(400)
-      .json({ ok: false, message: "Missing file (field name: file)" });
+      .json({ ok: false, message: "Falta el archivo (campo: file)" });
   }
 
   try {
     const result = await importClientsFromXlsx(Buffer.from(file.buffer));
     return res.status(200).json({ ok: true, result });
   } catch (err: any) {
-    // Errores típicos: columnas faltantes, archivo inválido, etc.
     return res.status(400).json({
       ok: false,
-      message: err?.message ?? "Failed to import file",
+      message: err?.message ?? "Error al importar archivo",
     });
   }
 }
 
 export async function handleUpdateClient(req: Request, res: Response) {
   const id = Number(req.params.id);
-  
+
   if (!Number.isFinite(id)) {
-    return res.status(400).json({ ok: false, message: "Invalid id" });
+    return res.status(400).json({ ok: false, message: "ID invalido" });
   }
 
   const parsed = updateClientSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ 
-      ok: false, 
-      message: "Invalid body", 
-      issues: parsed.error.issues 
+    return res.status(400).json({
+      ok: false,
+      message: "Datos invalidos",
+      issues: parsed.error.issues
     });
   }
 
@@ -138,10 +137,10 @@ export async function handleUpdateClient(req: Request, res: Response) {
     return res.json({ ok: true, item: updated });
   } catch (error: any) {
     if (error?.code === "P2025") {
-      return res.status(404).json({ ok: false, message: "Client not found" });
+      return res.status(404).json({ ok: false, message: "Cliente no encontrado" });
     }
     if (error?.code === "P2002") {
-      return res.status(409).json({ ok: false, message: "RUT already exists" });
+      return res.status(409).json({ ok: false, message: "El RUT ya existe" });
     }
     throw error;
   }

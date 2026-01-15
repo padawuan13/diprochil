@@ -9,9 +9,12 @@ import {
   addStopToRoute,
   createRoute,
   deleteStop,
+  deleteRoute,
   getRouteById,
   listRoutes,
   updateStop,
+  getConductoresConCarga,
+  autoAsignarConductorYVehiculo,
 } from "./routes.service";
 import { prisma } from "../../lib/prisma";
 import { z } from "zod";
@@ -30,7 +33,6 @@ function getAuthUser(req: Request): AuthUser | undefined {
   return req.user;
 }
 
-// 🔒 Tipos alineados con el service (evita errores con exactOptionalPropertyTypes)
 type UpdateStopInput = Parameters<typeof updateStop>[2];
 type UpdateStopActor = Parameters<typeof updateStop>[3];
 
@@ -131,7 +133,6 @@ export async function handleAddStop(req: Request, res: Response) {
     if (err?.status) {
       return res.status(err.status).json({ ok: false, message: err.message });
     }
-    // Prisma unique constraint (ej: @@unique([routeId, ordenVisita]))
     if (err?.code === "P2002") {
       return res.status(409).json({
         ok: false,
@@ -151,7 +152,6 @@ export async function handleUpdateStop(req: Request, res: Response) {
     return res.status(400).json({ ok: false, message: "Invalid ids" });
   }
 
-  // Ojo: tu schema ya normaliza alias (ENTREGADA -> COMPLETADA), así que parse directo está ok
   const parsed = updateStopSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
     return res
@@ -159,7 +159,6 @@ export async function handleUpdateStop(req: Request, res: Response) {
       .json({ ok: false, message: "Invalid body", issues: parsed.error.issues });
   }
 
-  // ✅ Seguridad: CONDUCTOR solo puede actualizar paradas de SU ruta
   if (actor?.role === "CONDUCTOR") {
     const route = await prisma.route.findUnique({
       where: { id: routeId },
@@ -176,7 +175,6 @@ export async function handleUpdateStop(req: Request, res: Response) {
 
   const b = parsed.data;
 
-  // ✅ Tipado fuerte: evita severidad?: ... | undefined
   const incidenteInput: UpdateStopInput["incidente"] =
     b.incidente
       ? {
@@ -229,6 +227,26 @@ export async function handleDeleteStop(req: Request, res: Response) {
 
   try {
     const result = await deleteStop(routeId, stopId);
+    return res.json({ ok: true, ...result });
+  } catch (err: any) {
+    if (err?.status) {
+      return res.status(err.status).json({ ok: false, message: err.message });
+    }
+    throw err;
+  }
+}
+
+export async function handleDeleteRoute(req: Request, res: Response) {
+  const routeId = Number(req.params.id);
+
+  if (!Number.isFinite(routeId)) {
+    return res.status(400).json({ ok: false, message: "Invalid route id" });
+  }
+
+  const deletePedidos = req.query.deletePedidos === "true";
+
+  try {
+    const result = await deleteRoute(routeId, deletePedidos);
     return res.json({ ok: true, ...result });
   } catch (err: any) {
     if (err?.status) {
@@ -321,10 +339,6 @@ export async function handleOptimizeRoute(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /routes/import/preview
- * Preview de importación de Excel (no guarda nada)
- */
 export async function handlePreviewImportExcel(req: Request, res: Response) {
   const file = (req as RequestWithFile).file;
 
@@ -347,10 +361,6 @@ export async function handlePreviewImportExcel(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /routes/import
- * Importar Excel y crear pedidos agrupados por comuna
- */
 export async function handleImportExcel(req: Request, res: Response) {
   const file = (req as RequestWithFile).file;
 
@@ -393,10 +403,6 @@ export async function handleImportExcel(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /routes/import-with-routes
- * Importar Excel y crear rutas automáticamente por comuna
- */
 export async function handleImportExcelConRutas(req: Request, res: Response) {
   const file = (req as RequestWithFile).file;
 
@@ -406,7 +412,6 @@ export async function handleImportExcelConRutas(req: Request, res: Response) {
       .json({ ok: false, message: "Missing file (field name: file)" });
   }
 
-  // CORRECCIÓN: rutasConfig viene como string en FormData, hay que parsearlo
   let rutasConfigParsed: any[];
   try {
     rutasConfigParsed = JSON.parse(req.body.rutasConfig || "[]");
@@ -459,6 +464,77 @@ export async function handleImportExcelConRutas(req: Request, res: Response) {
     return res.status(400).json({
       ok: false,
       message: error.message || "Error importing Excel with routes",
+    });
+  }
+}
+
+export async function handleGetConductoresCarga(req: Request, res: Response) {
+  const schema = z.object({
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  });
+
+  const parsed = schema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({
+      ok: false,
+      message: "Invalid query",
+      issues: parsed.error.issues,
+    });
+  }
+
+  const fechaStr = parsed.data.fecha || new Date().toISOString().split("T")[0];
+  const fecha = new Date(`${fechaStr}T12:00:00.000Z`);
+
+  try {
+    const conductores = await getConductoresConCarga(fecha);
+    return res.json({
+      ok: true,
+      fecha: fechaStr,
+      conductores,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message || "Error al obtener conductores",
+    });
+  }
+}
+
+export async function handleAutoAsignar(req: Request, res: Response) {
+  const schema = z.object({
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    zona: z.string().optional(),
+  });
+
+  const parsed = schema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({
+      ok: false,
+      message: "Invalid query",
+      issues: parsed.error.issues,
+    });
+  }
+
+  const fecha = new Date(`${parsed.data.fecha}T12:00:00.000Z`);
+
+  try {
+    const asignacion = await autoAsignarConductorYVehiculo(fecha, parsed.data.zona);
+
+    if (!asignacion) {
+      return res.status(404).json({
+        ok: false,
+        message: "No hay conductores disponibles",
+      });
+    }
+
+    return res.json({
+      ok: true,
+      ...asignacion,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message || "Error al auto-asignar",
     });
   }
 }

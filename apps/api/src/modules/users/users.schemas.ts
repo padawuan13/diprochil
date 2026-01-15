@@ -20,6 +20,7 @@ export const listUsersQuerySchema = z.object({
 
 export const updateUserSchema = z.object({
   nombre: z.string().min(2).max(120).optional(),
+  email: z.string().email().optional(),
   role: z.enum(Roles).optional(),
   active: z.boolean().optional(),
 });

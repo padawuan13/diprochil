@@ -48,7 +48,6 @@ export async function importClientsFromXlsx(
 ): Promise<ImportResult> {
   const wb = new ExcelJS.Workbook();
 
-  // Aseguramos ArrayBuffer compatible con exceljs
   const buf = buffer instanceof Buffer ? buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) : buffer;
   await wb.xlsx.load(buf);
 
@@ -79,7 +78,6 @@ export async function importClientsFromXlsx(
     ciudad: string;
     giro?: string;
     telefono?: string;
-    // futuros campos:
     direccion?: string;
     isla?: string;
     active: boolean;
@@ -116,7 +114,6 @@ export async function importClientsFromXlsx(
       continue;
     }
 
-    // ✅ Construimos el objeto sin meter undefined
     const item: ClientRow = {
       rut,
       razonSocial,
@@ -133,7 +130,6 @@ export async function importClientsFromXlsx(
 
   const valid = parsed.filter(Boolean) as ClientRow[];
 
-  // Duplicados dentro del archivo (por rut)
   const seen = new Set<string>();
   const duplicatesInFile: string[] = [];
   const unique: ClientRow[] = [];
@@ -147,7 +143,6 @@ export async function importClientsFromXlsx(
     unique.push(item);
   }
 
-  // Ya existentes en DB (tolerante a rut con/sin guión)
   const wanted = unique.map((x) => normalizeRut(x.rut));
   const rutVariants = new Set<string>();
   for (const r of wanted) {
@@ -165,7 +160,6 @@ export async function importClientsFromXlsx(
 
   const matchedExisting = new Set(wanted.filter((r) => existingNorm.has(r)));
 
-  // ✅ Manda solo campos definidos (ya lo hicimos arriba)
   const createRes = await prisma.client.createMany({
     data: toInsert,
     skipDuplicates: true,

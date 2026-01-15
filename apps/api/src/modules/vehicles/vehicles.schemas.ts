@@ -5,9 +5,9 @@ const VehicleStatus = ["ACTIVO", "INACTIVO", "MANTENCION"] as const;
 export const listVehiclesQuerySchema = z.object({
   take: z.coerce.number().int().min(1).max(200).default(20),
   skip: z.coerce.number().int().min(0).default(0),
-  search: z.string().optional(), // patente / tipo
+  search: z.string().optional(),
   estado: z.enum(VehicleStatus).optional(),
-  activeOnly: z.coerce.boolean().optional(), // atajo: true => no INACTIVO
+  activeOnly: z.coerce.boolean().optional(),
 });
 
 export const createVehicleSchema = z.object({
