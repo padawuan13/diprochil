@@ -28,7 +28,7 @@
 
 /* Grupo del mapa en el formulario */
 #mapaGroup {
-  grid-column: 1 / -1; /* Ocupar todo el ancho */
+  grid-column: 1 / -1; 
   margin-top: 16px;
 }
 

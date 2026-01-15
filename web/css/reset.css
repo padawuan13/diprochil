@@ -57,7 +57,7 @@ input, select, textarea {
   font-size: inherit;
 }
 
-/* Eliminar outline en focus (lo agregaremos manualmente con mejor estilo) */
+/* Focus styles */
 button:focus, 
 input:focus, 
 select:focus, 
@@ -72,7 +72,7 @@ table {
   width: 100%;
 }
 
-/* Eliminar estilos por defecto de fieldset */
+/* Fieldset sin bordes ni padding por defecto */
 fieldset {
   border: none;
   padding: 0;
