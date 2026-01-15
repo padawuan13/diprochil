@@ -1,151 +1,101 @@
-# DIPROCHIL - Sistema de Gestión de Rutas de Despacho
+DIPROCHIL - Sistema de Gestión de Rutas de Despacho
 
-Sistema web full-stack para la gestión de rutas de entrega, vehículos, clientes y pedidos de una empresa de logística.
+Bienvenido a DIPROCHIL, un sistema web integral diseñado para optimizar la gestión de rutas de entrega en empresas de logística. Con nuestra plataforma, podrás administrar vehículos, clientes y pedidos de manera eficiente.
 
-## 📋 Tabla de Contenidos
+📋 Tabla de Contenidos
+Características
+Tecnologías
+Requisitos previos
+Instalación
+Configuración
+Uso
+Estructura del Proyecto
+Puntos de acceso API
+Roles y Permisos
+Desarrollo
+✨ Características
+Gestión de Usuarios: Administra usuarios con un sistema de roles que incluye Administrador, Planificador, Supervisor y Conductor.
+Gestión de Clientes: Crea, lee, actualiza y elimina información de clientes, con opción de importar datos desde Excel.
+Gestión de Vehículos: Monitorea el estado de tu flota de vehículos.
+Gestión de Pedidos: Crea y realiza seguimiento de pedidos y entregas.
+Gestión de Rutas: Planifica y optimiza rutas de entrega para mejorar la eficiencia.
+Incidentes: Reporta cualquier incidente que ocurra durante las entregas.
+Importación desde Excel: Facilita la carga masiva de datos de clientes y rutas desde archivos Excel.
+Exportación de Informes: Genera informes en formato Excel para un análisis más detallado.
+🚀 Tecnologías
+Backend
+Node.js con TypeScript
+Express.js - Framework web
+Prisma - ORM para MySQL
+MySQL 8.0 - Base de datos
+JWT - Autenticación
+Zod - Validación de esquemas
+ExcelJS - Procesamiento de archivos Excel
+Frontend
+HTML5/CSS3/JavaScript - Sin frameworks (Vanilla)
+Fetch API - Cliente HTTP
+LocalStorage - Almacenamiento de tokens
+DevOps
+Docker Compose - Orquestación de contenedores
+📦 Requisitos previos
+Asegúrate de tener instalados los siguientes programas:
 
-- [Características](#características)
-- [Tecnologías](#tecnologías)
-- [Requisitos Previos](#requisitos-previos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Uso](#uso)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [API Endpoints](#api-endpoints)
-- [Roles y Permisos](#roles-y-permisos)
-- [Desarrollo](#desarrollo)
-
-## ✨ Características
-
-- **Gestión de Usuarios**: Sistema de autenticación con roles (Admin, Planificador, Supervisor, Conductor)
-- **Gestión de Clientes**: CRUD de clientes con importación desde Excel
-- **Gestión de Vehículos**: Control de flota de vehículos con estados
-- **Gestión de Pedidos**: Creación y seguimiento de pedidos/entregas
-- **Gestión de Rutas**: Planificación y optimización de rutas de entrega
-- **Incidentes**: Reporte de incidentes durante las entregas
-- **Importación Excel**: Importación masiva de clientes y rutas desde archivos Excel
-- **Exportación de Reportes**: Generación de reportes en formato Excel
-
-## 🚀 Tecnologías
-
-### Backend
-- **Node.js** con TypeScript
-- **Express.js** - Framework web
-- **Prisma** - ORM para MySQL
-- **MySQL 8.0** - Base de datos
-- **JWT** - Autenticación
-- **Zod** - Validación de schemas
-- **ExcelJS** - Procesamiento de archivos Excel
-
-### Frontend
-- **HTML5/CSS3/JavaScript** - Vanilla (sin frameworks)
-- **Fetch API** - Cliente HTTP
-- **LocalStorage** - Almacenamiento de tokens
-
-### DevOps
-- **Docker Compose** - Orquestación de contenedores
-
-## 📦 Requisitos Previos
-
-- Node.js >= 18.x
-- npm >= 9.x
-- MySQL 8.0 (o Docker para ejecutarlo)
-- Git
-
-## 🔧 Instalación
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/tu-usuario/diprochil.git
+Node.js >= 18.x
+npm >= 9.x
+MySQL 8.0 (o usar Docker para ejecutarlo)
+Git
+🔧 Instalación
+1. Clonar el repositorio
+git clone https://github.com/your-username/diprochil.git
 cd diprochil
-```
-
-### 2. Instalar dependencias del backend
-
-```bash
+2. Instalar dependencias del backend
 cd apps/api
 npm install
-```
-
-### 3. Configurar base de datos
-
-#### Opción A: Usar Docker Compose (recomendado)
-
-```bash
+3. Configurar la base de datos
+Opción A: Usar Docker Compose (recomendado)
 # Desde la raíz del proyecto
 docker-compose up -d
-```
+Esto iniciará MySQL en el puerto 3306 utilizando las credenciales que definiste en el archivo .env.
 
-Esto levantará MySQL en el puerto 3306 con las credenciales del archivo `.env`.
+Opción B: MySQL local
+Si decides no usar Docker, asegúrate de tener MySQL 8.0 instalado y en funcionamiento. Luego, crea la base de datos ejecutando:
 
-#### Opción B: MySQL local
-
-Asegúrate de tener MySQL 8.0 instalado y ejecutándose, luego crea la base de datos:
-
-```sql
 CREATE DATABASE diprochil;
 CREATE USER 'diprochil_user'@'localhost' IDENTIFIED BY 'diprochil_pass';
 GRANT ALL PRIVILEGES ON diprochil.* TO 'diprochil_user'@'localhost';
 FLUSH PRIVILEGES;
-```
-
-### 4. Configurar variables de entorno
-
-```bash
+4. Establecer variables de entorno
 cd apps/api
 cp .env.example .env
-```
+Edita el archivo .env para configurar las credenciales necesarias:
 
-Edita el archivo `.env` y configura tus credenciales:
-
-```env
 PORT=3000
 DATABASE_URL="mysql://diprochil_user:diprochil_pass@localhost:3306/diprochil"
 SHADOW_DATABASE_URL="mysql://diprochil_user:diprochil_pass@localhost:3306/diprochil_shadow"
-
 # Genera un JWT_SECRET fuerte con:
 # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-JWT_SECRET="tu_secret_muy_fuerte_y_aleatorio"
-
-# Credenciales del administrador inicial
+JWT_SECRET="your_very_strong_and_random_secret"
+# Credenciales iniciales del administrador
 ADMIN_EMAIL="admin@diprochil.cl"
-ADMIN_PASSWORD="TuContraseñaSegura123!"
+ADMIN_PASSWORD="YourSecurePassword123!"
 ADMIN_NAME="Administrador"
-```
-
-### 5. Ejecutar migraciones de Prisma
-
-```bash
+5. Ejecutar migraciones de Prisma
 cd apps/api
 npx prisma migrate dev
 npx prisma generate
-```
-
-### 6. Poblar la base de datos (seed)
-
-```bash
+6. Poblar la base de datos
 npm run seed
-```
+Esto creará el usuario administrador utilizando las credenciales definidas en el archivo .env.
 
-Esto creará el usuario administrador con las credenciales del `.env`.
-
-## 🎯 Uso
-
-### Iniciar el servidor backend
-
-```bash
+🎯 Uso
+Iniciar el servidor backend
 cd apps/api
 npm run dev
-```
+El servidor estará disponible en http://localhost:3000.
 
-El servidor estará disponible en `http://localhost:3000`
+Abrir el frontend
+Para acceder a la interfaz web, abre el archivo web/index.html en tu navegador, o utiliza un servidor estático:
 
-### Abrir el frontend
-
-Abre el archivo `web/index.html` en tu navegador, o usa un servidor estático:
-
-```bash
 # Opción 1: Usando Python
 cd web
 python -m http.server 8080
@@ -155,51 +105,45 @@ npx http-server web -p 8080
 
 # Opción 3: Usando VS Code Live Server
 # Haz clic derecho en index.html > "Open with Live Server"
-```
+Luego, dirígete a http://localhost:8080.
 
-Luego ve a `http://localhost:8080`
-
-### Credenciales de acceso por defecto
-
-- **Email**: admin@diprochil.cl
-- **Contraseña**: (la que configuraste en `.env`)
-
-## 📁 Estructura del Proyecto
-
-```
+Credenciales de acceso predeterminadas
+Email: admin@diprochil.cl
+Contraseña: (la que configuraste en .env)
+📁 Estructura del Proyecto
 diprochil/
 ├── apps/
-│   └── api/                      # Backend API
+│   └── api/                      # API Backend
 │       ├── src/
 │       │   ├── server.ts         # Punto de entrada
-│       │   ├── seed.ts           # Script de seeding
-│       │   ├── lib/              # Utilidades (Prisma client)
-│       │   ├── middlewares/      # Auth, roles, errores
+│       │   ├── seed.ts           # Script de poblamiento
+│       │   ├── lib/              # Utilidades (cliente Prisma)
+│       │   ├── middlewares/      # Autenticación, roles, errores
 │       │   ├── types/            # Definiciones de tipos TypeScript
 │       │   └── modules/          # Módulos de la aplicación
-│       │       ├── auth/         # Autenticación y login
+│       │       ├── auth/         # Autenticación e inicio de sesión
 │       │       ├── users/        # Gestión de usuarios
 │       │       ├── clients/      # Gestión de clientes
 │       │       ├── vehicles/     # Gestión de vehículos
-│       │       ├── pedidos/      # Gestión de pedidos
+│       │       ├── orders/       # Gestión de pedidos
 │       │       ├── routes/       # Gestión de rutas
 │       │       ├── incidents/    # Gestión de incidentes
 │       │       └── exports/      # Exportación de reportes
 │       ├── prisma/
-│       │   ├── schema.prisma     # Schema de base de datos
+│       │   ├── schema.prisma     # Esquema de base de datos
 │       │   └── migrations/       # Migraciones
-│       ├── .env                  # Variables de entorno (no commitear)
+│       ├── .env                  # Variables de entorno (no comprometer)
 │       ├── .env.example          # Ejemplo de variables de entorno
-│       ├── tsconfig.json         # Configuración TypeScript
+│       ├── tsconfig.json         # Configuración de TypeScript
 │       └── package.json
 ├── web/                          # Frontend
-│   ├── index.html               # Página de login
-│   ├── dashboard.html           # Dashboard principal
-│   ├── js/                      # Scripts JavaScript
-│   │   ├── config.js           # Configuración de la app
-│   │   ├── api.js              # Cliente HTTP
-│   │   ├── auth.js             # Lógica de autenticación
-│   │   └── [módulos].js        # Lógica de cada módulo
+│   ├── index.html               # Página de inicio de sesión
+│   ├── dashboard.html           # Panel principal
+│   ├── js/                      # Scripts de JavaScript
+│   │   ├── config.js            # Configuración de la aplicación
+│   │   ├── api.js               # Cliente HTTP
+│   │   ├── auth.js              # Lógica de autenticación
+│   │   └── [modules].js         # Lógica para cada módulo
 │   └── css/                     # Estilos
 │       ├── reset.css
 │       ├── variables.css
@@ -209,124 +153,92 @@ diprochil/
 ├── compose.yaml                 # Docker Compose (MySQL)
 ├── .gitignore
 └── README.md
-```
-
-## 🔗 API Endpoints
-
-### Autenticación
-- `POST /auth/login` - Login de usuario
-- `GET /auth/me` - Obtener usuario actual (requiere token)
-
-### Usuarios (requiere rol ADMIN)
-- `GET /users` - Listar usuarios
-- `GET /users/:id` - Obtener usuario por ID
-- `POST /users` - Crear usuario
-- `PATCH /users/:id` - Actualizar usuario
-- `DELETE /users/:id` - Eliminar usuario
-
-### Clientes
-- `GET /clients` - Listar clientes
-- `GET /clients/:id` - Obtener cliente por ID
-- `POST /clients` - Crear cliente
-- `PATCH /clients/:id` - Actualizar cliente
-- `POST /clients/import` - Importar clientes desde Excel
-
-### Vehículos
-- `GET /vehicles` - Listar vehículos
-- `GET /vehicles/:id` - Obtener vehículo por ID
-- `POST /vehicles` - Crear vehículo
-- `PATCH /vehicles/:id` - Actualizar vehículo
-
-### Pedidos
-- `GET /pedidos` - Listar pedidos
-- `GET /pedidos/:id` - Obtener pedido por ID
-- `POST /pedidos` - Crear pedido
-- `PATCH /pedidos/:id` - Actualizar pedido
-
-### Rutas
-- `GET /routes` - Listar rutas
-- `GET /routes/:id` - Obtener ruta por ID
-- `POST /routes` - Crear ruta
-- `POST /routes/:id/stops` - Agregar parada a ruta
-- `PATCH /routes/:id/stops/:stopId` - Actualizar parada
-- `DELETE /routes/:id/stops/:stopId` - Eliminar parada
-- `POST /routes/optimize` - Optimizar ruta
-- `POST /routes/import` - Importar rutas desde Excel
-
-### Incidentes
-- `GET /incidents` - Listar incidentes
-- `POST /incidents` - Crear incidente
-
-### Exportar
-- `GET /exports/routes` - Exportar rutas a Excel
-- `GET /exports/clients` - Exportar clientes a Excel
-
-## 👥 Roles y Permisos
-
-| Rol | Permisos |
-|-----|----------|
-| **ADMIN** | Acceso completo a todo el sistema |
-| **PLANIFICADOR** | Crear/editar rutas, clientes, vehículos, pedidos |
-| **SUPERVISOR** | Ver y gestionar rutas, marcar incidentes |
-| **CONDUCTOR** | Ver sus rutas asignadas, actualizar estado de paradas, reportar incidentes |
-
-## 🛠️ Desarrollo
-
-### Scripts disponibles
-
-```bash
+🔗 Puntos de Extensión de la API
+Autenticación
+POST /auth/login: Inicia sesión como usuario.
+GET /auth/me: Obtiene la información del usuario actual (requiere token).
+Usuarios (requiere rol ADMIN)
+GET /users: Lista todos los usuarios.
+GET /users/:id: Obtiene un usuario por su ID.
+POST /users: Crea un nuevo usuario.
+PATCH /users/:id: Actualiza la información de un usuario.
+DELETE /users/:id: Elimina un usuario.
+Clientes
+GET /clients: Lista todos los clientes.
+GET /clients/:id: Obtiene un cliente por su ID.
+POST /clients: Crea un nuevo cliente.
+PATCH /clients/:id: Actualiza la información de un cliente.
+POST /clients/import: Importa clientes desde un archivo Excel.
+Vehículos
+GET /vehicles: Lista todos los vehículos.
+GET /vehicles/:id: Obtiene un vehículo por su ID.
+POST /vehicles: Crea un nuevo vehículo.
+PATCH /vehicles/:id: Actualiza la información de un vehículo.
+Pedidos
+GET /orders: Lista todos los pedidos.
+GET /orders/:id: Obtiene un pedido por su ID.
+POST /orders: Crea un nuevo pedido.
+PATCH /orders/:id: Actualiza la información de un pedido.
+Rutas
+GET /routes: Lista todas las rutas.
+GET /routes/:id: Obtiene una ruta por su ID.
+POST /routes: Crea una nueva ruta.
+POST /routes/:id/stops: Añade una parada a la ruta.
+PATCH /routes/:id/stops/:stopId: Actualiza una parada.
+DELETE /routes/:id/stops/:stopId: Elimina una parada.
+POST /routes/optimize: Optimiza la ruta.
+POST /routes/import: Importa rutas desde un archivo Excel.
+Incidentes
+GET /incidents: Lista todos los incidentes.
+POST /incidents: Crea un nuevo incidente.
+Exportación
+GET /exports/routes: Exporta rutas a un archivo Excel.
+GET /exports/clients: Exporta clientes a un archivo Excel.
+👥 Roles y Permisos
+Rol	Permisos
+ADMIN	Acceso completo a todo el sistema
+PLANNER	Crear y editar rutas, clientes, vehículos y pedidos
+SUPERVISOR	Ver y gestionar rutas, así como reportar incidentes
+DRIVER	Ver rutas asignadas, actualizar el estado de paradas y reportar incidentes
+🛠️ Desarrollo
+Scripts Disponibles
 # Backend
 cd apps/api
 npm run dev          # Ejecutar en modo desarrollo
 npm run build        # Compilar TypeScript
-npm start            # Ejecutar compilado
-npm run seed         # Poblar base de datos
+npm start            # Ejecutar la versión compilada
+npm run seed         # Poblar la base de datos
 
 # Prisma
-npx prisma studio    # Abrir Prisma Studio (GUI para DB)
-npx prisma migrate dev --name nombre_migracion  # Crear migración
-npx prisma generate  # Generar Prisma Client
-```
-
-### Ejecutar tests (próximamente)
-
-```bash
+npx prisma studio    # Abrir Prisma Studio (interfaz gráfica de la base de datos)
+npx prisma migrate dev --name migration_name  # Crear migración
+npx prisma generate  # Generar el cliente de Prisma
+Ejecutar Pruebas (próximamente)
 npm test
-```
+Convenciones de Código
+TypeScript: Modo estricto habilitado
+Linting: ESLint (próximamente)
+Formateo: Prettier (próximamente)
+Commits: Convenciones de commits
+🔒 Seguridad
+Las contraseñas se cifran utilizando bcrypt (10 rondas)
+Autenticación basada en JWT con expiración
+Control de acceso basado en roles (RBAC)
+Validación de entrada con Zod
+Encabezados de seguridad configurados con Helmet
+CORS habilitado
+IMPORTANTE:
 
-### Convenciones de código
-
-- **TypeScript**: Strict mode habilitado
-- **Linting**: ESLint (próximamente)
-- **Formatting**: Prettier (próximamente)
-- **Commits**: Conventional Commits
-
-## 🔒 Seguridad
-
-- Las contraseñas se hashean con bcrypt (10 rounds)
-- Autenticación basada en JWT con expiración
-- Control de acceso basado en roles (RBAC)
-- Validación de inputs con Zod
-- Headers de seguridad con Helmet
-- CORS configurado
-
-**IMPORTANTE**:
-- Nunca commitees el archivo `.env`
-- Usa un `JWT_SECRET` fuerte en producción
-- Cambia las credenciales por defecto
-
-## 📝 Licencia
-
+No comprometas el archivo .env
+Utiliza un JWT_SECRET robusto en producción
+Cambia las credenciales predeterminadas
+📝 Licencia
 Este proyecto es privado y pertenece a DIPROCHIL.
 
-## 👨‍💻 Autor
+👨‍💻 Autor
+Felipe Hernández - Proyecto de Tesis 2025
 
-Felipe Hernández - Proyecto de Título 2025
+🐛 Reporte de Errores
+Si encuentras algún error, por favor abre un issue en el repositorio.
 
-## 🐛 Reporte de Bugs
-
-Si encuentras un bug, por favor abre un issue en el repositorio.
-
----
-
-**Nota**: Este README asume un entorno de desarrollo local. Para instrucciones de deployment en producción, consulta la documentación de deployment (próximamente).
+Nota: Este README está diseñado para un entorno de desarrollo local. Para obtener instrucciones sobre el despliegue en producción, consulta la documentación correspondiente (próximamente).
