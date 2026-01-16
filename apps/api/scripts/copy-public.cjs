@@ -10,7 +10,7 @@ if (!fs.existsSync(src)) {
 }
 
 fs.rmSync(dest, { recursive: true, force: true });
-fs.mkdirSync(dest, { recursive: true });
+fs.mkdirSync(path.dirname(dest), { recursive: true });
 fs.cpSync(src, dest, { recursive: true });
 
 console.log("COPY_PUBLIC_DONE");
