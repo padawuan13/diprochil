@@ -5,15 +5,14 @@ const src = path.resolve(__dirname, "../public");
 const dest = path.resolve(__dirname, "../dist/public");
 
 if (!fs.existsSync(src)) {
-  console.log(" No existe public en:", src);
+  console.log("COPY_PUBLIC: public NOT FOUND:", src);
   process.exit(0);
 }
 
 fs.rmSync(dest, { recursive: true, force: true });
-fs.mkdirSync(path.dirname(dest), { recursive: true });
+fs.mkdirSync(dest, { recursive: true });
 fs.cpSync(src, dest, { recursive: true });
 
-console.log(" Copied public -> dist/public");
-console.log("   src :", src);
-console.log("   dest:", dest);
 console.log("COPY_PUBLIC_DONE");
+console.log("SRC:", src);
+console.log("DEST:", dest);

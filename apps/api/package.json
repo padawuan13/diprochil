@@ -7,7 +7,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && node scripts/copy-public.cjs && node -e \"console.log('BUILD_DONE')\"",
+    "build": "tsc && node scripts/copy-public.cjs && node -e \"const fs=require('fs'); console.log('DIST_PUBLIC_EXISTS', fs.existsSync('dist/public')); if(fs.existsSync('dist/public')) console.log('DIST_PUBLIC_FILES', fs.readdirSync('dist/public').slice(0,20));\"",
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
     "seed": "tsx src/seed.ts",
