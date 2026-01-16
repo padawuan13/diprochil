@@ -29,8 +29,8 @@ const candidates = [
 
 const publicDir = candidates.find((p) => fs.existsSync(p));
 
-console.log("Static candidates:", candidates);
-console.log("Static chosen:", publicDir);
+console.log(" Static candidates:", candidates);
+console.log(" Static chosen:", publicDir);
 
 if (publicDir) {
   app.use(express.static(publicDir));
