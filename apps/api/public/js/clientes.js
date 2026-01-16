@@ -5,11 +5,11 @@
 const Clientes = {
   clientes: [],
   clienteSeleccionado: null,
-  mainMap: null, // Mapa principal de la vista
-  mainMarkers: [], // Marcadores del mapa principal
-  modalMap: null, // Mapa del modal
-  modalMarker: null, // Marcador del modal
-  mapVisible: true, // Estado de visibilidad del mapa principal
+  mainMap: null, 
+  mainMarkers: [], 
+  modalMap: null, 
+  modalMarker: null, 
+  mapVisible: true, 
 
   /**
    * Escapar HTML para prevenir XSS
@@ -72,7 +72,7 @@ const Clientes = {
     }
 
     document.getElementById('btnGeocodificar').addEventListener('click', () => {
-      this.abrirModalGeocodificar();
+      window.location.href = 'importar-geocodificador.html';
     });
 
     document.getElementById('btnCerrarModalGeo').addEventListener('click', () => {

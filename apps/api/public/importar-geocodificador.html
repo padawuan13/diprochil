@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Importar y Geocodificar - DIPROCHIL</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/config.js"></script>
+
   <style>
     * {
       margin: 0;
@@ -467,17 +469,16 @@
 
   <script>
     // ==================== CONFIGURACIÓN ====================
-    // Configuración basada en tu config.js: ENDPOINTS.CLIENTS = '/clients'
-    
-    const CONFIG = {
-      API_BASE: 'http://localhost:3000',
-      ENDPOINTS: {
-        LOGIN: '/auth/login',       // ✅ authRouter.post("/auth/login", handleLogin)
-        CLIENTS: '/clients'         // ✅ CONFIG.ENDPOINTS.CLIENTS = '/clients'
-      }
-    };
+   
+    const GEO_CONFIG = {
+  API_BASE: CONFIG.API_URL,
+  ENDPOINTS: {
+    LOGIN: CONFIG.ENDPOINTS.LOGIN,
+    CLIENTS: CONFIG.ENDPOINTS.CLIENTS,
+  },
+};
 
-    const API_BASE_URL = CONFIG.API_BASE;
+    const API_BASE_URL = GEO_CONFIG.API_BASE;
     
     let excelData = [];
     let columnNames = [];
@@ -745,7 +746,7 @@
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
-      const loginUrl = CONFIG.API_BASE + CONFIG.ENDPOINTS.LOGIN;
+      const loginUrl = GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.LOGIN;
       log(`🔗 Intentando conectar a: ${loginUrl}`, 'info');
 
       try {
@@ -760,7 +761,7 @@
             throw new Error(`❌ Endpoint no encontrado: ${loginUrl}\n\n💡 Verifica la configuración de rutas en el backend.`);
           }
           if (response.status === 401) {
-            throw new Error(`❌ Credenciales incorrectas\n\n💡 Verifica:\n- Email: ${email}\n- Contraseña\n- Que el usuario exista en la base de datos\n- Que tenga rol ADMIN`);
+            throw new Error(`Credenciales incorrectas\n\n Verifica:\n- Email: ${email}\n- Contraseña\n- Que el usuario exista en la base de datos\n- Que tenga rol ADMIN`);
           }
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
@@ -770,7 +771,7 @@
         return data.token;
       } catch (error) {
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          throw new Error(`❌ No se puede conectar al servidor en ${CONFIG.API_BASE}\n\n💡 Verifica que el backend esté corriendo con: npm run dev`);
+          throw new Error(` No se puede conectar al servidor en ${GEO_CONFIG.API_BASE}\n\n Verifica que el backend esté corriendo con: npm run dev`);
         }
         throw error;
       }
@@ -797,7 +798,7 @@
 
     async function apiRequest(path, { method = 'GET', query = undefined, body = undefined } = {}) {
       const qs = query ? ('?' + new URLSearchParams(Object.entries(query).filter(([,v]) => v !== undefined && v !== null && v !== '')).toString()) : '';
-      const url = CONFIG.API_BASE + path + qs;
+      const url = GEO_CONFIG.API_BASE + path + qs;
 
       const headers = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -829,7 +830,7 @@
 
       while (skip < total) {
         rounds++;
-        const resp = await apiRequest(CONFIG.ENDPOINTS.CLIENTS, { query: { take, skip } });
+        const resp = await apiRequest(GEO_CONFIG.ENDPOINTS.CLIENTS, { query: { take, skip } });
         const items = resp.items || [];
         total = Number(resp.total ?? items.length);
 
@@ -849,7 +850,7 @@
     }
 
     async function createClient(datos) {
-      return apiRequest(CONFIG.ENDPOINTS.CLIENTS, { method: 'POST', body: datos });
+      return apiRequest(GEO_CONFIG.ENDPOINTS.CLIENTS, { method: 'POST', body: datos });
     }
 
     async function patchClient(clienteId, datos) {
@@ -932,10 +933,10 @@
 
       try {
         log('🔑 Conectando con el servidor...', 'info');
-        log(`📡 API Base: ${CONFIG.API_BASE}`, 'info');
-        log(`🔐 Login: ${CONFIG.API_BASE + CONFIG.ENDPOINTS.LOGIN}`, 'info');
-        log(`📋 Clientes: ${CONFIG.API_BASE + CONFIG.ENDPOINTS.CLIENTS}`, 'info');
-        
+        log(`📡 API Base: ${GEO_CONFIG.API_BASE}`, 'info');
+        log(`🔐 Login: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.LOGIN}`, 'info');
+        log(`📋 Clientes: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.CLIENTS}`, 'info');
+
         token = await obtenerToken();
         log('✅ Autenticación exitosa', 'success');
 

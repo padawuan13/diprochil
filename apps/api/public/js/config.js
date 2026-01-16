@@ -2,14 +2,23 @@
    CONFIG.JS - Configuración de la aplicación
    ======================================== */
 
+function resolveApiUrl() {
+  const envUrl = window.ENV?.API_URL;
+  if (envUrl) return envUrl;
+
+  const { protocol, hostname, port, origin } = window.location;
+
+  if (protocol === "file:") return "http://localhost:3000";
+
+  if (port && port !== "3000") {
+    return `${protocol}//${hostname}:3000`;
+  }
+
+  return origin;
+}
+
 const CONFIG = {
-  API_URL: window.ENV?.API_URL || (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.startsWith('192.168.')
-      ? 'http://localhost:3000'
-      : window.location.origin
-  ),
+  API_URL: resolveApiUrl(),
 
   ENDPOINTS: {
     LOGIN: '/auth/login',
