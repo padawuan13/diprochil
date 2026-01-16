@@ -11,7 +11,7 @@ async function main() {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    console.log("✅ Admin ya existe:", email);
+    console.log(" Admin ya existe:", email);
     return;
   }
 
@@ -27,8 +27,8 @@ async function main() {
     },
   });
 
-  console.log("✅ Admin creado:", email);
-  console.log("   ⚠️  Guarda la contraseña del archivo .env de forma segura");
+  console.log(" Admin creado:", email);
+  console.log(" Guarda la contraseña del archivo .env de forma segura");
 }
 
 main()
