@@ -130,12 +130,14 @@ export async function autoAsignarConductor(fecha: Date, zona?: string) {
     }
   }
 
-  return {
-    conductorId: conductores[0].id,
-    vehicleId: null,
-    rutaExistenteId: null,
-    razon: "menor_carga",
-  };
+  const primerConductor = conductores[0];
+if (!primerConductor) return null; 
+return {
+  conductorId: primerConductor.id,
+  vehicleId: null,
+  rutaExistenteId: null,
+  razon: "menor_carga",
+};
 }
 
 export async function getVehiculosDisponibles(fecha: Date) {
@@ -196,9 +198,10 @@ export async function autoAsignarConductorYVehiculo(fecha: Date, zona?: string) 
 
   const { disponibles } = await getVehiculosDisponibles(fecha);
 
-  if (disponibles.length > 0) {
-    return { ...asignacion, vehicleId: disponibles[0].id };
-  }
+  const primerVehiculo = disponibles[0];
+if (primerVehiculo) {
+  return { ...asignacion, vehicleId: primerVehiculo.id };
+}
 
   const todosVehiculos = await prisma.vehicle.findFirst({
     where: { estado: VehicleStatus.ACTIVO },
