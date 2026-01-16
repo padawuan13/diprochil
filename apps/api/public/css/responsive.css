@@ -1,0 +1,219 @@
+/* ========================================
+   RESPONSIVE CSS - Media Queries
+   ======================================== */
+
+/* TABLET (768px y menos) */
+@media (max-width: 768px) {
+  /* Ocultar sidebar en móviles por defecto */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main content ocupa todo el ancho */
+  .main-content {
+    margin-left: 0;
+  }
+
+  /* Reducir padding del content */
+  .content-wrapper {
+    padding: var(--spacing-4);
+  }
+
+  /* Header responsive */
+  .header-user-info {
+    display: none;
+  }
+
+  /* Grid responsive */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Toolbar en columna */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Search box full width */
+  .search-box {
+    max-width: 100%;
+  }
+
+  /* Tabla responsive con scroll horizontal */
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+
+  /* Cards con menos padding */
+  .card {
+    padding: var(--spacing-4);
+  }
+
+  /* Login card más pequeño */
+  .login-card {
+    padding: var(--spacing-6);
+  }
+
+  .login-logo {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* MÓVIL (480px y menos) */
+@media (max-width: 480px) {
+  /* Reducir espaciados generales */
+  .content-wrapper {
+    padding: var(--spacing-3);
+  }
+
+  .card {
+    padding: var(--spacing-3);
+  }
+
+  /* Botones más pequeños en móvil */
+  .btn {
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: var(--font-size-xs);
+  }
+
+  /* Header más compacto */
+  .app-header {
+    padding: 0 var(--spacing-4);
+  }
+
+  .header-title {
+    font-size: var(--font-size-base);
+  }
+
+  /* Form inputs más compactos */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: var(--spacing-2);
+  }
+
+  /* Tabla aún más compacta */
+  .table th,
+  .table td {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-xs);
+  }
+
+  /* Login aún más compacto */
+  .login-card {
+    padding: var(--spacing-4);
+  }
+
+  .login-header {
+    margin-bottom: var(--spacing-6);
+  }
+}
+
+/* DESKTOP GRANDE (1200px y más) */
+@media (min-width: 1200px) {
+  .content-wrapper {
+    padding: var(--spacing-8);
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* UTILIDADES DE VISIBILIDAD RESPONSIVE */
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none;
+  }
+
+  .show-mobile {
+    display: block;
+  }
+}
+
+/* HAMBURGER MENU (para móviles) */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+}
+
+.hamburger.open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* OVERLAY para cerrar sidebar en móviles */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--z-fixed) - 1);
+}
+
+@media (max-width: 768px) {
+  .sidebar-overlay.active {
+    display: block;
+  }
+}

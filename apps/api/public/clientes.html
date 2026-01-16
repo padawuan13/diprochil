@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIPROCHIL - Clientes</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/mapa.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+  <img src="assets/images/logo-diprochil.png" alt="DIPROCHIL">
+</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <a href="dashboard.html" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section" id="nav-gestion">
+          <div class="nav-section-title">Gestión</div>
+          <a href="clientes.html" class="nav-link active">
+            <span class="nav-link-icon">👥</span>
+            <span>Clientes</span>
+          </a>
+          <a href="pedidos.html" class="nav-link">
+            <span class="nav-link-icon">📦</span>
+            <span>Pedidos</span>
+          </a>
+          <a href="rutas.html" class="nav-link">
+            <span class="nav-link-icon">🚚</span>
+            <span>Rutas</span>
+          </a>
+          <a href="vehiculos.html" class="nav-link">
+            <span class="nav-link-icon">🚐</span>
+            <span>Vehículos</span>
+          </a>
+                  <a href="incidencias.html" class="nav-link">
+          <span class="nav-link-icon">⚠️</span>
+          <span>Incidencias</span>
+          </a>
+</div>
+
+        <div class="nav-section" id="nav-admin">
+          <div class="nav-section-title">Administración</div>
+          <a href="usuarios.html" class="nav-link">
+            <span class="nav-link-icon">👤</span>
+            <span>Usuarios</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-danger btn-block btn-sm" id="logoutBtn">
+          Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="hamburger" id="hamburgerBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <h1 class="header-title">Gestión de Clientes</h1>
+        </div>
+        <div class="header-right">
+          <div class="header-user">
+            <div class="header-user-info">
+              <div class="header-user-name" id="userName">Usuario</div>
+              <div class="header-user-role" id="userRole">Rol</div>
+            </div>
+            <div class="header-user-avatar" id="userAvatar">U</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <div class="content-wrapper">
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box">
+              <input 
+                type="text" 
+                class="form-input search-input" 
+                id="searchInput"
+                placeholder="Buscar cliente..."
+              >
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-secondary" id="btnGeocodificar" style="margin-right: 12px;">
+              📍 Geocodificar Clientes
+            </button>
+            <button class="btn btn-primary" id="btnNuevoCliente">
+              + Nuevo Cliente
+            </button>
+          </div>
+        </div>
+
+        <!-- MAPA DE CLIENTES -->
+<div class="card mb-4">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h5 class="mb-0">📍 Mapa de Clientes</h5>
+    <button class="btn btn-sm btn-secondary" id="btnToggleMapView">
+      Ocultar Mapa
+    </button>
+  </div>
+  <div class="card-body" id="mainMapContainer">
+    <div id="mainMap" style="height: 450px;"></div>
+    <div class="mt-3" style="display: flex; gap: 16px; font-size: 14px;">
+      <div>
+        <span style="color: #10b981; font-weight: bold;">●</span> 
+        Con ubicación: <strong id="countWithGeo">0</strong>
+      </div>
+      <div>
+        <span style="color: #ef4444; font-weight: bold;">●</span> 
+        Sin ubicación: <strong id="countWithoutGeo">0</strong>
+      </div>
+      <div>
+        <span style="color: #6b7280; font-weight: bold;">●</span> 
+        Total: <strong id="countTotal">0</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+        <!-- TABLA DE CLIENTES -->
+        <div class="card">
+          <div class="card-body">
+            <div id="clientesTableContainer">
+              <p class="text-center text-muted">Cargando clientes...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- MODAL: CREAR/EDITAR CLIENTE -->
+  <div id="modalCliente" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; padding: 20px; overflow-y: auto;">
+    <div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; padding: 32px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 id="modalTitle" style="font-size: 24px; font-weight: 600; margin: 0;">Nuevo Cliente</h2>
+        <button id="btnCerrarModal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+      </div>
+
+      <div id="modalMessage"></div>
+
+      <form id="formCliente">
+        <input type="hidden" id="clienteId">
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label for="rut" class="form-label required">RUT</label>
+            <input type="text" id="rut" class="form-input" placeholder="12.345.678-9" required>
+            <span class="form-error"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="razonSocial" class="form-label required">Razón Social</label>
+            <input type="text" id="razonSocial" class="form-input" placeholder="Nombre de la empresa" required>
+            <span class="form-error"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label for="comuna" class="form-label required">Comuna</label>
+            <input type="text" id="comuna" class="form-input" placeholder="Ancud, Castro, etc." required>
+            <span class="form-error"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="ciudad" class="form-label required">Ciudad</label>
+            <input type="text" id="ciudad" class="form-input" placeholder="Chiloé" required>
+            <span class="form-error"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="direccion" class="form-label">Dirección</label>
+          <input type="text" id="direccion" class="form-input" placeholder="Calle, número, sector">
+          <span class="form-error"></span>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label for="isla" class="form-label">Isla</label>
+            <input type="text" id="isla" class="form-input" placeholder="Grande, Quinchao, etc.">
+            <span class="form-error"></span>
+          </div>
+
+          <div class="form-group" id="mapaGroup" style="display: none;">
+            <label class="form-label">Ubicación en el Mapa</label>
+            <div id="map"></div>
+            <span class="form-help">Haz clic en el mapa para establecer la ubicación exacta</span>
+            <input type="hidden" id="latitud">
+            <input type="hidden" id="longitud">
+          </div>
+
+          <div class="form-group" id="coordsDisplay" style="display: none;">
+            <p class="text-sm text-muted">
+              📍 Coordenadas: <span id="coordsText">No establecidas</span>
+              <button type="button" class="btn btn-sm btn-secondary" id="btnMostrarMapa">
+                Ver/Editar en Mapa
+              </button>
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="telefono" class="form-label">Teléfono</label>
+            <input type="tel" id="telefono" class="form-input" placeholder="+56 9 1234 5678">
+            <span class="form-error"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="giro" class="form-label">Giro Comercial</label>
+          <input type="text" id="giro" class="form-input" placeholder="Comercio, agricultura, etc.">
+          <span class="form-error"></span>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelar" style="flex: 1;">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" id="btnGuardar" style="flex: 1;">
+            Guardar Cliente
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL: GEOCODIFICAR CLIENTES -->
+  <div id="modalGeocodificar" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; padding: 20px; overflow-y: auto;">
+    <div style="max-width: 700px; margin: 40px auto; background: white; border-radius: 12px; padding: 32px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; margin: 0;">📍 Geocodificar Clientes</h2>
+        <button id="btnCerrarModalGeo" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+      </div>
+
+      <div id="geoMessage"></div>
+
+      <!-- Resumen inicial -->
+      <div id="geoResumen" style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+        <p style="margin: 0 0 12px 0; color: #374151;">
+          <strong>Total de clientes:</strong> <span id="geoTotal">0</span>
+        </p>
+        <p style="margin: 0 0 12px 0; color: #10b981;">
+          <strong>✓ Con ubicación:</strong> <span id="geoConUbicacion">0</span>
+        </p>
+        <p style="margin: 0; color: #ef4444;">
+          <strong>✗ Sin ubicación:</strong> <span id="geoSinUbicacion">0</span>
+        </p>
+      </div>
+
+      <!-- Progreso -->
+      <div id="geoProgreso" style="display: none;">
+        <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0 0 12px 0; color: #1e40af;">
+            <strong>Geocodificando...</strong> <span id="geoProgresoTexto">0 de 0</span>
+          </p>
+          <div style="width: 100%; background: #d1d5db; border-radius: 9999px; height: 8px; overflow: hidden;">
+            <div id="geoProgresoBar" style="width: 0%; background: #2563eb; height: 100%; transition: width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div id="geoResultados" style="display: none; max-height: 300px; overflow-y: auto;"></div>
+
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button type="button" class="btn btn-secondary" id="btnCancelarGeo" style="flex: 1;">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" id="btnIniciarGeo" style="flex: 1;">
+          Iniciar Geocodificación
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="js/clientes.js"></script>
+
+  <script>
+    Auth.requireAuth([CONFIG.ROLES.ADMIN, CONFIG.ROLES.PLANIFICADOR, CONFIG.ROLES.SUPERVISOR]);
+
+    const user = Auth.getUser();
+    document.getElementById('userName').textContent = user?.nombre || 'Usuario';
+    document.getElementById('userRole').textContent = user?.role || 'Sin rol';
+    document.getElementById('userAvatar').textContent = user?.nombre?.charAt(0).toUpperCase() || 'U';
+
+    const userRole = user?.role;
+    if (userRole !== CONFIG.ROLES.ADMIN) {
+      document.getElementById('nav-admin').style.display = 'none';
+    }
+
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    hamburgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+      hamburgerBtn.classList.toggle('open');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+      hamburgerBtn.classList.remove('open');
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (UI.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        Auth.logout();
+      }
+    });
+
+    Clientes.init();
+
+    UI.initNotifications();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIPROCHIL - Iniciar Sesión</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  
+  <!-- CONTENEDOR DE LOGIN -->
+  <div class="login-container">
+    <div class="login-card">
+      
+      <!-- HEADER DEL LOGIN -->
+      <div class="login-header">
+        <img
+          src="assets/images/logo-diprochil.png"
+          alt="DIPROCHIL"
+          style="width: 96px; height: 96px; object-fit: contain; margin: 0 auto 12px; display: block;"
+        >
+        <h1 class="login-logo">DIPROCHIL</h1>
+        <p class="login-subtitle">Sistema de Gestión de Rutas de Despacho</p>
+      </div>
+
+      <!-- MENSAJES DE ERROR/ÉXITO -->
+      <div id="message-container"></div>
+
+      <!-- FORMULARIO DE LOGIN -->
+      <form id="loginForm">
+        
+        <!-- USUARIO O CORREO -->
+        <div class="form-group">
+          <label for="email" class="form-label required">Usuario o Correo</label>
+          <input
+            type="text"
+            id="email"
+            class="form-input"
+            placeholder="usuario o correo@ejemplo.com"
+            autocomplete="email"
+            required
+          >
+          <span class="form-error"></span>
+        </div>
+
+        <!-- PASSWORD -->
+        <div class="form-group">
+          <label for="password" class="form-label required">Contraseña</label>
+          <input 
+            type="password" 
+            id="password" 
+            class="form-input" 
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          >
+          <span class="form-error"></span>
+        </div>
+
+        <!-- RECORDAR SESIÓN (OPCIONAL - NO FUNCIONAL AÚN) -->
+        <div class="form-check mb-4">
+          <input type="checkbox" id="remember" class="form-check-input">
+          <label for="remember" class="form-check-label">Recordar sesión</label>
+        </div>
+
+        <!-- BOTÓN DE LOGIN -->
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">
+          Iniciar Sesión
+        </button>
+
+      </form>
+
+      <!-- FOOTER DEL LOGIN (OPCIONAL) -->
+      <div class="text-center mt-6 text-sm text-muted">
+        <p>&copy; 2026 DIPROCHIL - Sistema de Gestión de Rutas</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    /* ========================================
+       LÓGICA DEL LOGIN
+       ======================================== */
+
+    if (Auth.isAuthenticated()) {
+      Auth.redirectToDashboard();
+    }
+
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const messageContainer = document.getElementById('message-container');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      messageContainer.innerHTML = '';
+      UI.clearFieldError('email');
+      UI.clearFieldError('password');
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email) {
+        UI.showFieldError('email', 'El correo o identificador es requerido');
+        return;
+      }
+
+      if (!password) {
+        UI.showFieldError('password', 'La contraseña es requerida');
+        return;
+      }
+
+      if (password.length < 6) {
+        UI.showFieldError('password', 'La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      UI.setButtonLoading(loginBtn, true);
+
+      try {
+        const remember = document.getElementById('remember').checked;
+
+        const response = await Auth.login(email, password, remember);
+
+        messageContainer.innerHTML = `
+          <div class="alert alert-success">
+            ¡Bienvenido! Iniciando sesión...
+          </div>
+        `;
+
+        setTimeout(() => {
+          Auth.redirectToDashboard();
+        }, 1000);
+
+      } catch (error) {
+        messageContainer.innerHTML = `
+          <div class="alert alert-danger">
+            ${error.message || 'Credenciales inválidas. Verifica tu correo y contraseña.'}
+          </div>
+        `;
+
+        UI.setButtonLoading(loginBtn, false);
+      }
+    });
+
+    document.getElementById('email').addEventListener('input', () => {
+      UI.clearFieldError('email');
+    });
+
+    document.getElementById('password').addEventListener('input', () => {
+      UI.clearFieldError('password');
+    });
+  </script>
+
+</body>
+</html>
