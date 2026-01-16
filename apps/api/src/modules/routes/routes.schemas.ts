@@ -5,9 +5,6 @@ const timeString = z
   .string()
   .regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Time must be HH:MM or HH:MM:SS");
 
-/**
- * Parser de fecha que ajusta al mediodía UTC para evitar desfases de timezone
- */
 const dateAtNoon = z.preprocess((val) => {
   if (!val) return undefined;
 

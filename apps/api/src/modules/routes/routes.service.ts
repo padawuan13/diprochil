@@ -231,13 +231,11 @@ export async function listRoutes(params: {
   if (params.dateFrom || params.dateTo) {
     where.fechaRuta = {};
     if (params.dateFrom) {
-      // Ajustar al inicio del día para incluir cualquier hora de ese día
       const fromDate = new Date(params.dateFrom);
       fromDate.setUTCHours(0, 0, 0, 0);
       where.fechaRuta.gte = fromDate;
     }
     if (params.dateTo) {
-      // Ajustar al final del día para incluir cualquier hora de ese día
       const toDate = new Date(params.dateTo);
       toDate.setUTCHours(23, 59, 59, 999);
       where.fechaRuta.lte = toDate;
@@ -623,7 +621,6 @@ export async function importarExcelConRutas(
 
     let orden = 1;
     for (const cliente of rutaComuna.clientes) {
-      // Crear pedido
       const pedido = await prisma.pedido.create({
         data: {
           clientId: cliente.clienteId,
@@ -636,7 +633,6 @@ export async function importarExcelConRutas(
 
       pedidosCreados++;
 
-      // Crear detalles del pedido
       for (const producto of cliente.productos) {
         await prisma.pedidoDetalle.create({
           data: {
@@ -649,7 +645,6 @@ export async function importarExcelConRutas(
         detallesCreados++;
       }
 
-      // Crear parada en la ruta
       await prisma.routeStop.create({
         data: {
           routeId: rutaCreada.id,

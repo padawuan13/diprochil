@@ -80,7 +80,7 @@ function parsearExcel(buffer: Buffer): Map<string, FilaExcel[]> {
       "RutCliente", 
       "RUT", 
       "Rut Cliente",
-      "Cod Cliente", // Sin punto
+      "Cod Cliente", 
       "Cliente"
     ]);
     return rut !== null && rut !== "";
@@ -174,7 +174,7 @@ async function buscarYAgruparPorZona(
           "Descripción Producto", 
           "Descripcion", 
           "Producto Descripcion",
-          "Descripción P", // Truncado
+          "Descripción P", 
           "Descripcion P"
         ]) || "").trim(),
         cantidad: Number(obtenerValorColumna(p, [

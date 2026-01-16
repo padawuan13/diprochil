@@ -16,3 +16,4 @@ fs.cpSync(src, dest, { recursive: true });
 console.log(" Copied public -> dist/public");
 console.log("   src :", src);
 console.log("   dest:", dest);
+console.log("COPY_PUBLIC_DONE");

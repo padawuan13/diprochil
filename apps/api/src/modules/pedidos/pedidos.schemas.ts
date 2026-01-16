@@ -2,9 +2,6 @@ import { z } from "zod";
 
 const PedidoEstado = ["PENDIENTE", "ENTREGADO", "NO_ENTREGADO"] as const;
 
-/**
- * Parser de fecha que ajusta al mediodía UTC para evitar desfases de timezone
- */
 const dateAtNoon = z.preprocess((val) => {
   if (!val) return undefined;
 

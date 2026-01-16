@@ -15,7 +15,7 @@ export const clientsRouter = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, 
 });
 
 clientsRouter.get(

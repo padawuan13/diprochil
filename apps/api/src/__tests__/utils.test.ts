@@ -3,7 +3,6 @@ import { describe, it, expect } from '@jest/globals';
 describe('Utility Functions', () => {
   describe('RUT normalization', () => {
     it('should normalize Chilean RUT format', () => {
-      // Esta es una función de ejemplo basada en clients.import.service.ts
       function normalizeRut(raw: string): string {
         return String(raw ?? "")
           .trim()

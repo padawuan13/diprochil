@@ -6,7 +6,7 @@ export function errorMiddleware(
     res: Response,
     _next: NextFunction
 ) {
-    console.error("❌ Unhandled error:", err);
+    console.error(" Unhandled error:", err);
 
     return res.status(500).json({
         ok: false,

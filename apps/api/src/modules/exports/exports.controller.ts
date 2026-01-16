@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import ExcelJS from "exceljs";
-import { prisma } from "../../lib/prisma"; // usa tu helper central, no PrismaClient directo
+import { prisma } from "../../lib/prisma"; 
 
 // ==========================
 // Exportar pedidos vencidos

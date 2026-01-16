@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 type JwtPayload = {
-  sub: string; // userId
+  sub: string; 
   role: string;
   email: string;
 };

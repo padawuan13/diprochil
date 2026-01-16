@@ -31,7 +31,7 @@ export async function handleListClients(req: Request, res: Response) {
 
   const data = await listClients(params);
   return res.json({ ok: true, ...data });
-} // ← AGREGUÉ ESTA LLAVE PARA CERRAR handleListClients
+} 
 
 export async function handleGetClient(req: Request, res: Response) {
   const id = Number(req.params.id);

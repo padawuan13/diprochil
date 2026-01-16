@@ -64,7 +64,6 @@ export function optimizarRuta(
     };
   }
 
-  // Asegurar que puntoInicio o puntos[0] existan
   const primerPunto = puntos[0];
   if (!primerPunto) {
     return {
