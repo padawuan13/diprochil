@@ -180,7 +180,6 @@ export async function handleUpdateStop(req: Request, res: Response) {
       ? {
           tipo: b.incidente.tipo,
           descripcion: b.incidente.descripcion,
-          ...(b.incidente.severidad !== undefined ? { severidad: b.incidente.severidad } : {}),
         }
       : undefined;
 
