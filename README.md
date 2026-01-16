@@ -109,7 +109,7 @@ Luego, dirígete a http://localhost:8080.
 
 Credenciales de acceso predeterminadas
 Email: admin@diprochil.cl
-Contraseña: (la que configuraste en .env)
+Contraseña: (la configurada en .env)
 📁 Estructura del Proyecto
 diprochil/
 ├── apps/

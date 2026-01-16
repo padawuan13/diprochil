@@ -21,13 +21,24 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
-const publicDir = path.join(__dirname, "../public"); 
+const candidates = [
+  path.resolve(__dirname, "public"),     
+  path.resolve(__dirname, "../public"),  
+  path.resolve(process.cwd(), "public"), 
+];
 
+const publicDir = candidates.find((p) => fs.existsSync(p));
+
+console.log("Static candidates:", candidates);
+console.log("Static chosen:", publicDir);
+
+if (publicDir) {
   app.use(express.static(publicDir));
-
   app.get("/", (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
   });
+}
+
 
 app.use(routes);
 app.use("/exports", exportsRoutes);
