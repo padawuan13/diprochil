@@ -1024,16 +1024,39 @@
 
           const puntosOptimizados = resultado.rutaOptimizada.puntos;
 
+          const ordenesPendientes = [...paradasPendientes]
+            .map(p => p.ordenVisita)
+            .sort((a, b) => a - b);
+
+          const updates = [];
           for (let i = 0; i < puntosOptimizados.length; i++) {
             const pedidoId = puntosOptimizados[i].pedidoId;
             const parada = paradasPendientes.find(p => p.pedidoId === pedidoId);
+            if (!parada) continue;
 
-            if (parada) {
-              await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.ruta.id}/stops/${parada.id}`, {
-                ordenVisita: i + 1
-              });
-            }
+            const ordenFinal = ordenesPendientes[i] ?? (i + 1); 
+            updates.push({ paradaId: parada.id, ordenFinal });
           }
+
+          if (updates.length !== paradasPendientes.length) {
+            console.warn("Optimización: no calzó el número de paradas", { updates, paradasPendientes, puntosOptimizados });
+          }
+
+          const maxOrdenActual = Math.max(...this.ruta.stops.map(s => s.ordenVisita || 0));
+          const offset = maxOrdenActual + 1000;
+
+          for (const u of updates) {
+            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.ruta.id}/stops/${u.paradaId}`, {
+              ordenVisita: offset + u.ordenFinal
+            });
+          }
+
+          for (const u of updates) {
+            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.ruta.id}/stops/${u.paradaId}`, {
+              ordenVisita: u.ordenFinal
+            });
+          }
+
 
           const distancia = resultado.rutaOptimizada.distanciaTotal?.toFixed(1) || '?';
           UI.showAlert(`Ruta optimizada! Distancia estimada: ${distancia} km`, 'success');
