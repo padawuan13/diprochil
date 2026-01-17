@@ -425,5 +425,9 @@ const UI = {
   },
 };
 
-// Exportar UI (si usas módulos ES6)
-// export default UI;
+// PWA: Service Worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
