@@ -312,13 +312,13 @@ const Pedidos = {
    * Cargar conductores
    */
   async cargarConductores() {
-    console.log('🔄 Cargando conductores...');
+    console.log('Cargando conductores...');
     try {
       const response = await API.get('/users', { take: 200, role: 'CONDUCTOR' });
       this.conductores = response.items?.filter(u => u.role === 'CONDUCTOR' && u.active) || [];
-      console.log('✅ Conductores cargados:', this.conductores.length);
+      console.log('Conductores cargados:', this.conductores.length);
     } catch (error) {
-      console.error('❌ Error al cargar conductores:', error);
+      console.error('Error al cargar conductores:', error);
       this.conductores = [];
     }
   },
@@ -327,13 +327,13 @@ const Pedidos = {
    * Cargar vehículos
    */
   async cargarVehiculos() {
-    console.log('🔄 Cargando vehículos...');
+    console.log('Cargando vehículos...');
     try {
       const response = await API.get(CONFIG.ENDPOINTS.VEHICLES, { take: 200 });
       this.vehiculos = response.items?.filter(v => v.estado === 'ACTIVO') || [];
-      console.log('✅ Vehículos cargados:', this.vehiculos.length);
+      console.log('Vehículos cargados:', this.vehiculos.length);
     } catch (error) {
-      console.error('❌ Error al cargar vehículos:', error);
+      console.error('Error al cargar vehículos:', error);
       this.vehiculos = [];
     }
   },
@@ -641,10 +641,10 @@ const Pedidos = {
         const cliente = this.clientes.find(c => c.id === clientId);
         const zona = cliente?.comuna || 'Sin zona';
 
-        console.log('🔍 Asignando pedido a ruta...');
-        console.log('🔍 Zona del cliente:', zona);
-        console.log('🔍 Conductor seleccionado:', conductorId || 'AUTO');
-        console.log('🔍 Vehículo seleccionado:', vehicleId || 'AUTO');
+        console.log('Asignando pedido a ruta...');
+        console.log('Zona del cliente:', zona);
+        console.log('Conductor seleccionado:', conductorId || 'AUTO');
+        console.log('Vehículo seleccionado:', vehicleId || 'AUTO');
 
         let rutaId = null;
 
@@ -662,13 +662,13 @@ const Pedidos = {
               if (autoRes.rutaExistenteId) {
                 rutaId = autoRes.rutaExistenteId;
                 mensaje = `Pedido auto-asignado a ruta #${rutaId} existente (${zona})`;
-                console.log('✅ Auto-asignación: ruta existente', rutaId);
+                console.log('Auto-asignación: ruta existente', rutaId);
               } else {
-                console.log('✅ Auto-asignación: conductor', conductorId, 'vehículo', vehicleId);
+                console.log('Auto-asignación: conductor', conductorId, 'vehículo', vehicleId);
               }
             }
           } catch (autoErr) {
-            console.warn('⚠️ Error en auto-asignación, usando primer conductor disponible:', autoErr);
+            console.warn('Error en auto-asignación, usando primer conductor disponible:', autoErr);
             if (this.conductores.length > 0) conductorId = this.conductores[0].id;
             if (this.vehiculos.length > 0) vehicleId = this.vehiculos[0].id;
           }
@@ -1060,7 +1060,6 @@ const Pedidos = {
       );
     }
 
-    // Mostrar sección de configuración de rutas
     this.mostrarConfiguracionRutas(data.rutasPorComuna);
   },
 
@@ -1119,7 +1118,7 @@ const Pedidos = {
   async crearRutasAutomaticas() {
     if (!this.selectedFile || !this.previewData) return;
 
-    console.log('🚀 Iniciando creación de rutas automáticas...');
+    console.log('Iniciando creación de rutas automáticas...');
 
     const fechaCompromisoInput = document.getElementById('fechaCompromisoImport').value;
     
@@ -1154,7 +1153,7 @@ const Pedidos = {
       return;
     }
 
-    console.log('📋 Configuración de rutas:', rutasConfig);
+    console.log('Configuración de rutas:', rutasConfig);
 
     const [year, month, day] = fechaCompromisoInput.split('-');
     const fechaFormateada = `${day}/${month}/${year}`;
@@ -1170,8 +1169,8 @@ const Pedidos = {
     formData.append('rutasConfig', JSON.stringify(rutasConfig));
 
     try {
-      console.log('📤 Enviando request a /routes/import-with-routes...');
-      console.log('📋 Datos a enviar:', {
+      console.log('Enviando request a /routes/import-with-routes...');
+      console.log('Datos a enviar:', {
         fechaCompromiso: `${fechaCompromisoInput}T12:00:00.000Z`,
         rutasConfig: rutasConfig
       });
@@ -1186,11 +1185,11 @@ const Pedidos = {
 
       const data = await response.json();
 
-      console.log('📥 Respuesta del servidor:', data);
+      console.log('Respuesta del servidor:', data);
 
       if (!response.ok || !data.ok) {
         if (data.issues) {
-          console.error('❌ Errores de validación:', data.issues);
+          console.error('Errores de validación:', data.issues);
         }
         throw new Error(data.message || 'Error al crear rutas');
       }
@@ -1210,7 +1209,7 @@ const Pedidos = {
       }, 2000);
 
     } catch (error) {
-      console.error('❌ Error al crear rutas:', error);
+      console.error('Error al crear rutas:', error);
       this.showImportAlert('error', 'Error', error.message);
     } finally {
       document.getElementById('importLoading').style.display = 'none';

@@ -3,31 +3,27 @@
    ======================================== */
 
 const Auth = {
-  // Flag para saber si usar localStorage o sessionStorage
   _useLocalStorage: true,
 
   /**
    * Iniciar sesión
    * @param {string} email
    * @param {string} password
-   * @param {boolean} remember - Si es true, guarda en localStorage (persistente), si no en sessionStorage (solo esta pestaña)
+   * @param {boolean} remember 
    */
   async login(email, password, remember = false) {
     try {
       const response = await API.post(CONFIG.ENDPOINTS.LOGIN, { email, password }, false);
 
       if (response.ok && response.token && response.user) {
-        // Configurar si recordar sesion
         this._useLocalStorage = remember;
 
-        // Guardar preferencia de recordar en localStorage siempre
         if (remember) {
           localStorage.setItem(CONFIG.STORAGE_KEYS.REMEMBER, 'true');
         } else {
           localStorage.removeItem(CONFIG.STORAGE_KEYS.REMEMBER);
         }
 
-        // Guardar token y usuario
         this.setToken(response.token);
         this.setUser(response.user);
         return response;
@@ -44,7 +40,6 @@ const Auth = {
    * Cerrar sesión
    */
   logout() {
-    // Limpiar de ambos storages por si acaso
     localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.REMEMBER);
@@ -64,15 +59,12 @@ const Auth = {
    * Obtener el storage a usar (localStorage si recuerda, sessionStorage si no)
    */
   _getStorage() {
-    // Verificar si hay token en localStorage (sesion recordada)
     if (localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)) {
       return localStorage;
     }
-    // Verificar si hay token en sessionStorage (sesion temporal)
     if (sessionStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN)) {
       return sessionStorage;
     }
-    // Por defecto usar segun flag interno
     return this._useLocalStorage ? localStorage : sessionStorage;
   },
 
@@ -80,7 +72,6 @@ const Auth = {
    * Obtener token
    */
   getToken() {
-    // Buscar en localStorage primero, luego sessionStorage
     return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN) ||
            sessionStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
   },
@@ -97,7 +88,6 @@ const Auth = {
    * Obtener usuario
    */
   getUser() {
-    // Buscar en localStorage primero, luego sessionStorage
     const userJson = localStorage.getItem(CONFIG.STORAGE_KEYS.USER) ||
                      sessionStorage.getItem(CONFIG.STORAGE_KEYS.USER);
     return userJson ? JSON.parse(userJson) : null;
@@ -139,11 +129,10 @@ const Auth = {
    */
   requireAuth(allowedRoles = null) {
     if (!this.isAuthenticated()) {
-      window.location.href = 'index.html'; // ✅ Ruta relativa
+      window.location.href = 'index.html'; 
       return false;
     }
 
-    // Si se especifican roles permitidos, verificar
     if (allowedRoles && !this.hasAnyRole(allowedRoles)) {
       alert('No tienes permisos para acceder a esta página');
       this.redirectToDashboard();
@@ -161,10 +150,10 @@ const Auth = {
 
     switch (role) {
       case CONFIG.ROLES.CONDUCTOR:
-        window.location.href = 'conductor.html'; // ✅ Ruta relativa
+        window.location.href = 'conductor.html'; 
         break;
       default:
-        window.location.href = 'dashboard.html'; // ✅ Ruta relativa
+        window.location.href = 'dashboard.html'; 
         break;
     }
   },
@@ -194,5 +183,3 @@ const Auth = {
   },
 };
 
-// Exportar Auth (si usas módulos ES6)
-// export default Auth;

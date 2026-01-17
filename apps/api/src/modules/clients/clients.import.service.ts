@@ -68,7 +68,7 @@ export async function importClientsFromXlsx(
     throw new Error(`Missing required columns: ${missing.join(", ")}`);
   }
 
-  const totalRows = ws.rowCount - 1; // sin header
+  const totalRows = ws.rowCount - 1; 
   const invalid: Array<{ row: number; reason: string }> = [];
 
   type ClientRow = {

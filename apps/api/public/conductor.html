@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>DIPROCHIL - Panel del Conductor</title>
 
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
 
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -320,22 +320,22 @@
         <input type="hidden" id="editClienteId">
 
         <div class="form-group">
-          <label class="form-label">Direccion</label>
+          <label class="form-label" for="editClienteDireccion">Direccion</label>
           <input type="text" id="editClienteDireccion" class="form-input" placeholder="Ej: Av. Principal 123">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Comuna</label>
+          <label class="form-label" for="editClienteComuna">Comuna</label>
           <input type="text" id="editClienteComuna" class="form-input" placeholder="Ej: Puerto Montt">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label">Latitud</label>
+            <label class="form-label" for="editClienteLatitud">Latitud</label>
             <input type="number" step="any" id="editClienteLatitud" class="form-input" placeholder="-41.4693">
           </div>
           <div class="form-group">
-            <label class="form-label">Longitud</label>
+            <label class="form-label" for="editClienteLongitud">Longitud</label>
             <input type="number" step="any" id="editClienteLongitud" class="form-input" placeholder="-72.9424">
           </div>
         </div>
@@ -448,6 +448,7 @@
       incidencias: [],
       routeMap: null,
       vistaActual: 'dashboard',
+      _optimizing: false,
 
       escapeHtml(str) {
         return String(str ?? '')
@@ -483,31 +484,31 @@
           const day = String(hoy.getDate()).padStart(2, '0');
           const fechaHoy = `${year}-${month}-${day}`;
 
-          console.log('🚚 Conductor ID:', user?.id, '| Nombre:', user?.nombre);
-          console.log('🚚 Buscando rutas para fecha:', fechaHoy);
+          console.log('Conductor ID:', user?.id, '| Nombre:', user?.nombre);
+          console.log('Buscando rutas para fecha:', fechaHoy);
 
           const rutasRes = await API.get(`${CONFIG.ENDPOINTS.ROUTES}/my`, {
             date: fechaHoy,
           });
 
-          console.log('🚚 Rutas encontradas:', rutasRes.items?.length || 0);
-          rutasRes.items?.forEach(r => console.log(`   - Ruta #${r.id}: ${r.zona}, estado=${r.estado}, conductorId=${r.conductorId}`));
+          console.log('Rutas encontradas:', rutasRes.items?.length || 0);
+          rutasRes.items?.forEach(r => console.log(`- Ruta #${r.id}: ${r.zona}, estado=${r.estado}, conductorId=${r.conductorId}`));
 
           const rutas = rutasRes.items || [];
 
           const rutasActivas = rutas.filter(r => r.estado !== 'FINALIZADA' && r.estado !== 'CANCELADA');
-          console.log('🚚 Rutas activas (no finalizadas/canceladas):', rutasActivas.length);
+          console.log('Rutas activas (no finalizadas/canceladas):', rutasActivas.length);
 
           let rutaActiva = rutasActivas.find(r => r.estado === 'EN_CURSO');
           if (!rutaActiva) rutaActiva = rutasActivas.find(r => r.estado === 'PROGRAMADA');
 
-          console.log('🚚 Ruta activa seleccionada:', rutaActiva ? `#${rutaActiva.id} (${rutaActiva.estado})` : 'ninguna');
+          console.log('Ruta activa seleccionada:', rutaActiva ? `#${rutaActiva.id} (${rutaActiva.estado})` : 'ninguna');
 
           if (rutaActiva) {
             const detalle = await API.get(`${CONFIG.ENDPOINTS.ROUTES}/${rutaActiva.id}/dashboard`);
             this.ruta = detalle.item;
             this.incidencias = detalle.item?.incidents || [];
-            console.log('🚚 Incidencias de esta ruta:', this.incidencias.length);
+            console.log('Incidencias de esta ruta:', this.incidencias.length);
           } else {
             this.ruta = null;
             this.incidencias = [];
@@ -998,88 +999,120 @@
       },
 
       async optimizarRuta() {
-        if (!this.ruta || !this.ruta.stops) {
-          UI.showAlert('No hay ruta cargada', 'error');
-          return;
-        }
-
-        const paradasPendientes = this.ruta.stops.filter(p => p.estadoParada === 'PENDIENTE');
-
-        if (paradasPendientes.length < 2) {
-          UI.showAlert('Se necesitan al menos 2 paradas pendientes para optimizar', 'warning');
-          return;
-        }
-
-        if (!UI.confirm(`Optimizar el orden de ${paradasPendientes.length} paradas pendientes? Esto reordenara la ruta para minimizar la distancia.`)) {
-          return;
-        }
+        if (this._optimizing) return;
+        this._optimizing = true;
 
         try {
+          if (!this.ruta || !Array.isArray(this.ruta.stops)) {
+            UI.showAlert('No hay ruta cargada', 'error');
+            return;
+          }
+
+          const paradasPendientes = this.ruta.stops.filter(p => p.estadoParada === 'PENDIENTE');
+          if (paradasPendientes.length < 2) {
+            UI.showAlert('Se necesitan al menos 2 paradas pendientes para optimizar', 'warning');
+            return;
+          }
+
+          if (!UI.confirm(`Optimizar el orden de ${paradasPendientes.length} paradas pendientes? Esto reordenará la ruta para minimizar la distancia.`)) {
+            return;
+          }
+
           UI.showAlert('Optimizando ruta...', 'info');
 
-          const pedidoIds = paradasPendientes.map(p => p.pedidoId);
+          const pedidoIds = paradasPendientes
+            .map(p => p.pedidoId)
+            .filter(id => Number.isInteger(id) && id > 0);
 
-          const resultado = await API.post(`${CONFIG.ENDPOINTS.ROUTES}/optimize`, {
-            pedidoIds: pedidoIds
-          });
+          const resultado = await API.post(`${CONFIG.ENDPOINTS.ROUTES}/optimize`, { pedidoIds });
 
-          console.log('Resultado optimizacion:', resultado);
-
-          if (!resultado.ok || !resultado.rutaOptimizada) {
-            if (resultado.clientesSinCoordenadas) {
+          if (!resultado?.ok || !resultado?.rutaOptimizada?.puntos?.length) {
+            if (resultado?.clientesSinCoordenadas?.length) {
               const clientes = resultado.clientesSinCoordenadas.map(c => c.cliente).join(', ');
               throw new Error(`Clientes sin coordenadas: ${clientes}`);
             }
-            throw new Error(resultado.message || 'No se pudo optimizar la ruta');
+            throw new Error(resultado?.message || 'No se pudo optimizar la ruta');
           }
 
           const puntosOptimizados = resultado.rutaOptimizada.puntos;
 
-          const ordenesPendientes = [...paradasPendientes]
-            .map(p => p.ordenVisita)
-            .sort((a, b) => a - b);
+          const pidToStop = new Map(paradasPendientes.map(s => [s.pedidoId, s]));
+          const stopsOrdenados = puntosOptimizados
+            .map(p => pidToStop.get(p.pedidoId))
+            .filter(Boolean);
 
-          const updates = [];
-          for (let i = 0; i < puntosOptimizados.length; i++) {
-            const pedidoId = puntosOptimizados[i].pedidoId;
-            const parada = paradasPendientes.find(p => p.pedidoId === pedidoId);
-            if (!parada) continue;
-
-            const ordenFinal = ordenesPendientes[i] ?? (i + 1); 
-            updates.push({ paradaId: parada.id, ordenFinal });
+          for (const s of paradasPendientes) {
+            if (!stopsOrdenados.includes(s)) stopsOrdenados.push(s);
           }
 
-          if (updates.length !== paradasPendientes.length) {
-            console.warn("Optimización: no calzó el número de paradas", { updates, paradasPendientes, puntosOptimizados });
+          const toInt = (v) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? Math.trunc(n) : NaN;
+          };
+
+          const usedByNonPending = new Set(
+            this.ruta.stops
+              .filter(s => s.estadoParada !== 'PENDIENTE')
+              .map(s => toInt(s.ordenVisita))
+              .filter(n => Number.isInteger(n) && n >= 1)
+          );
+
+          const slotSet = new Set(
+            paradasPendientes
+              .map(s => toInt(s.ordenVisita))
+              .filter(n => Number.isInteger(n) && n >= 1)
+          );
+
+          const ordenesValidasEnRuta = this.ruta.stops
+            .map(s => toInt(s.ordenVisita))
+            .filter(n => Number.isInteger(n) && n >= 1);
+
+          const maxOrdenActual = ordenesValidasEnRuta.length ? Math.max(...ordenesValidasEnRuta) : 0;
+
+          let next = maxOrdenActual + 1;
+          while (slotSet.size < paradasPendientes.length) {
+            while (usedByNonPending.has(next) || slotSet.has(next)) next++;
+            slotSet.add(next++);
           }
 
-          const maxOrdenActual = Math.max(...this.ruta.stops.map(s => s.ordenVisita || 0));
-          const offset = maxOrdenActual + 1000;
+          const slots = Array.from(slotSet).sort((a, b) => a - b).slice(0, paradasPendientes.length);
+
+          const updates = stopsOrdenados.map((stop, i) => ({
+            paradaId: stop.id,
+            ordenFinal: slots[i], 
+          }));
+
+          const routeId = this.ruta.id;
+          const offset = maxOrdenActual + 100000;
 
           for (const u of updates) {
-            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.ruta.id}/stops/${u.paradaId}`, {
-              ordenVisita: offset + u.ordenFinal
+            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${routeId}/stops/${u.paradaId}`, {
+              ordenVisita: offset + u.ordenFinal,
             });
           }
 
           for (const u of updates) {
-            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.ruta.id}/stops/${u.paradaId}`, {
-              ordenVisita: u.ordenFinal
+            await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${routeId}/stops/${u.paradaId}`, {
+              ordenVisita: u.ordenFinal,
             });
           }
 
+          const distancia = Number(resultado.rutaOptimizada.distanciaTotal);
+          const distanciaTxt = Number.isFinite(distancia) ? distancia.toFixed(1) : '?';
 
-          const distancia = resultado.rutaOptimizada.distanciaTotal?.toFixed(1) || '?';
-          UI.showAlert(`Ruta optimizada! Distancia estimada: ${distancia} km`, 'success');
+          UI.showAlert(`Ruta optimizada ✅ Distancia estimada: ${distanciaTxt} km`, 'success');
 
           await this.cargarDatos();
           this.renderizarVista();
 
         } catch (error) {
           console.error('Error al optimizar ruta:', error);
-          UI.showAlert(error.message || 'Error al optimizar la ruta', 'error');
+          UI.showAlert(error?.message || 'Error al optimizar la ruta', 'error');
+        } finally {
+          this._optimizing = false;
         }
       },
+
 
       abrirRutaCompleta() {
         if (!this.ruta || !this.ruta.stops) {

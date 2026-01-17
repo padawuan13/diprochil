@@ -1,6 +1,5 @@
 /* ========================================
    EXPORTAR-EXCEL.JS - Utilidad para exportar a Excel
-   Usa la librería SheetJS (xlsx)
    ======================================== */
 
 const ExportarExcel = {
@@ -9,9 +8,8 @@ const ExportarExcel = {
    */
   async exportarPedidos() {
     try {
-      console.log('📊 Exportando pedidos a Excel...');
+      console.log('Exportando pedidos a Excel...');
 
-      // Obtener todos los pedidos (límite 200 por restricción del backend)
       const response = await API.get(CONFIG.ENDPOINTS.PEDIDOS, { take: 200, skip: 0 });
       const pedidos = response.items || [];
 
@@ -20,13 +18,11 @@ const ExportarExcel = {
         return;
       }
 
-      console.log('📊 Cargando incidencias de rutas...');
+      console.log('Cargando incidencias de rutas...');
 
-      // Obtener rutas con detalles completos para cruzar incidencias
       const rutasResponse = await API.get(CONFIG.ENDPOINTS.ROUTES, { take: 200 });
       const rutasIds = rutasResponse.items?.map(r => r.id) || [];
       
-      // Cargar detalles de cada ruta con incidencias
       const incidenciasPorPedido = {};
       
       await Promise.all(
@@ -54,9 +50,8 @@ const ExportarExcel = {
         })
       );
 
-      console.log('✅ Incidencias cargadas');
+      console.log('Incidencias cargadas');
 
-      // Preparar datos para Excel
       const data = pedidos.map(p => {
         const incidencias = incidenciasPorPedido[p.id] || [];
         const tieneIncidencia = incidencias.length > 0;
@@ -79,36 +74,33 @@ const ExportarExcel = {
         };
       });
 
-      // Crear libro de Excel
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
 
-      // Ajustar anchos de columna
       const colWidths = [
-        { wch: 8 },  // ID
-        { wch: 40 }, // Cliente
-        { wch: 15 }, // RUT
-        { wch: 40 }, // Dirección
-        { wch: 15 }, // Comuna
-        { wch: 15 }, // Teléfono
-        { wch: 10 }, // Cajas
-        { wch: 18 }, // Fecha Solicitud
-        { wch: 18 }, // Fecha Compromiso
-        { wch: 15 }, // Estado
-        { wch: 18 }, // Tiene Incidencia
-        { wch: 30 }, // Tipo Incidencia
-        { wch: 50 }, // Última Incidencia
-        { wch: 40 }, // Comentarios
+        { wch: 8 },  
+        { wch: 40 }, 
+        { wch: 15 }, 
+        { wch: 40 }, 
+        { wch: 15 }, 
+        { wch: 15 }, 
+        { wch: 10 }, 
+        { wch: 18 }, 
+        { wch: 18 }, 
+        { wch: 15 }, 
+        { wch: 18 }, 
+        { wch: 30 }, 
+        { wch: 50 }, 
+        { wch: 40 }, 
       ];
       ws['!cols'] = colWidths;
 
-      // Descargar archivo
       const fecha = new Date().toISOString().split('T')[0];
       const filename = `Pedidos_${fecha}.xlsx`;
       XLSX.writeFile(wb, filename);
 
-      console.log('✅ Excel exportado:', filename);
+      console.log('Excel exportado:', filename);
       const conIncidencias = data.filter(p => p['Tiene Incidencia'] === 'SÍ').length;
       const mensaje = conIncidencias > 0 
         ? `Excel exportado: ${data.length} pedidos (${conIncidencias} con incidencias)`
@@ -116,20 +108,11 @@ const ExportarExcel = {
       UI.showSuccess(mensaje);
 
     } catch (error) {
-      console.error('❌ Error al exportar:', error);
+      console.error('Error al exportar:', error);
       UI.showError('Error al exportar a Excel');
     }
   },
 
-  /**
-   * ✅ NUEVO: Reporte operación (Entregas + Incidencias)
-   *
-   * Genera un Excel pensado para análisis:
-   * - Hoja "Entregas": 1 fila por parada (cliente/pedido) con estado de entrega
-   * - Hoja "Incidencias": 1 fila por incidencia registrada en ruta
-   *
-   * Nota: usa /routes + /routes/:id/dashboard para obtener stops (entregas) + incidents.
-   */
   async exportarReporteOperacion() {
     try {
       if (!window.XLSX) {
@@ -138,9 +121,8 @@ const ExportarExcel = {
       }
 
       UI.showLoadingOverlay(true);
-      console.log('📥 Exportando reporte operación (entregas + incidencias)...');
+      console.log('Exportando reporte operación (entregas + incidencias)...');
 
-      // 1) Traer todas las rutas (paginadas)
       const take = 200;
       let skip = 0;
       const rutas = [];
@@ -158,7 +140,6 @@ const ExportarExcel = {
         return;
       }
 
-      // 2) Traer dashboard por cada ruta (secuencial para no saturar)
       const entregasRows = [];
       const incidenciasRows = [];
 
@@ -173,7 +154,6 @@ const ExportarExcel = {
           const vehiculo = ruta.vehicle?.patente || '-';
           const zona = ruta.zona || '-';
 
-          // Entregas (paradas)
           (ruta.stops || []).forEach((stop) => {
             const pedido = stop.pedido;
             const cliente = pedido?.client;
@@ -201,7 +181,6 @@ const ExportarExcel = {
             });
           });
 
-          // Incidencias
           (ruta.incidents || []).forEach((inc) => {
             const pedido = inc.pedido;
             const cliente = pedido?.client;
@@ -229,7 +208,7 @@ const ExportarExcel = {
           });
 
         } catch (err) {
-          console.warn('⚠️ No se pudo cargar dashboard ruta', rutaId, err);
+          console.warn('No se pudo cargar dashboard ruta', rutaId, err);
         }
       }
 
@@ -290,7 +269,7 @@ const ExportarExcel = {
       UI.showSuccess(`Reporte exportado: ${entregasRows.length} entregas / ${incidenciasRows.length} incidencias`);
 
     } catch (error) {
-      console.error('❌ Error al exportar reporte operación:', error);
+      console.error('Error al exportar reporte operación:', error);
       UI.showError('Error al exportar el reporte');
     } finally {
       UI.showLoadingOverlay(false);
@@ -302,10 +281,8 @@ const ExportarExcel = {
    */
   async exportarRutas() {
     try {
-      console.log('📊 Exportando rutas a Excel...');
+      console.log('Exportando rutas a Excel...');
 
-      // Obtener todas las rutas CON includes para traer stops e incidents
-      // Nota: Si el backend no soporta ?include=, haremos peticiones individuales
       const response = await API.get(CONFIG.ENDPOINTS.ROUTES, { take: 200 });
       let rutas = response.items || [];
 
@@ -314,9 +291,8 @@ const ExportarExcel = {
         return;
       }
 
-      console.log('📊 Cargando detalles de cada ruta...');
+      console.log('Cargando detalles de cada ruta...');
       
-      // Cargar detalles completos de cada ruta
       const rutasCompletas = await Promise.all(
         rutas.map(async (ruta) => {
           try {
@@ -329,15 +305,13 @@ const ExportarExcel = {
         })
       );
 
-      console.log('✅ Detalles cargados');
+      console.log('Detalles cargados');
 
       // Preparar datos de rutas para Excel
       const dataRutas = rutasCompletas.map(r => {
-        // Calcular paradas completadas correctamente
         const paradasCompletadas = r.stops?.filter(s => s.estadoParada === 'COMPLETADA').length || 0;
         const paradasNoEntregadas = r.stops?.filter(s => s.estadoParada === 'NO_ENTREGADA').length || 0;
         
-        // Obtener horas reales de inicio y fin
         const paradasConHora = r.stops?.filter(s => s.horaLlegada) || [];
         paradasConHora.sort((a, b) => new Date(a.horaLlegada) - new Date(b.horaLlegada));
         
@@ -372,7 +346,6 @@ const ExportarExcel = {
       rutasCompletas.forEach(r => {
         if (r.incidents && r.incidents.length > 0) {
           r.incidents.forEach(inc => {
-            // Buscar el pedido para obtener info del cliente
             const parada = r.stops?.find(s => s.pedidoId === inc.pedidoId);
             const cliente = parada?.pedido?.client;
 
@@ -419,7 +392,7 @@ const ExportarExcel = {
       wsRutas['!cols'] = colWidthsRutas;
       XLSX.utils.book_append_sheet(wb, wsRutas, 'Rutas');
 
-      // Hoja 2: Incidencias (solo si hay)
+      // Hoja 2: Incidencias (si hay)
       if (dataIncidencias.length > 0) {
         const wsIncidencias = XLSX.utils.json_to_sheet(dataIncidencias);
         const colWidthsIncidencias = [
@@ -441,19 +414,18 @@ const ExportarExcel = {
         XLSX.utils.book_append_sheet(wb, wsIncidencias, 'Incidencias por Cliente');
       }
 
-      // Descargar archivo
       const fecha = new Date().toISOString().split('T')[0];
       const filename = `Rutas_${fecha}.xlsx`;
       XLSX.writeFile(wb, filename);
 
-      console.log('✅ Excel exportado:', filename);
+      console.log('Excel exportado:', filename);
       const mensaje = dataIncidencias.length > 0 
         ? `Excel exportado: ${dataRutas.length} rutas y ${dataIncidencias.length} incidencias`
         : `Excel exportado: ${dataRutas.length} rutas`;
       UI.showSuccess(mensaje);
 
     } catch (error) {
-      console.error('❌ Error al exportar:', error);
+      console.error('Error al exportar:', error);
       UI.showError('Error al exportar a Excel');
     }
   },

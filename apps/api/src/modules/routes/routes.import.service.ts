@@ -66,7 +66,7 @@ function parsearExcel(buffer: Buffer): Map<string, FilaExcel[]> {
   }
 
   const data = XLSX.utils.sheet_to_json(worksheet, {
-    range: 5, // Fila 6 del Excel (índice 5)
+    range: 5, // Comenzar desde la fila 6 (índice 5)
     defval: "",
   }) as FilaExcel[];
 
@@ -232,7 +232,6 @@ async function crearPedidos(
         },
       });
 
-      // Crear detalles
       for (const producto of cliente.productos) {
         await prisma.pedidoDetalle.create({
           data: {

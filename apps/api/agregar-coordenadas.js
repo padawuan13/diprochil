@@ -1,7 +1,5 @@
 /**
  * Script para agregar coordenadas a clientes en MySQL
- * Ejecutar desde: apps/api
- * Comando: node agregar-coordenadas.js
  */
 
 const mysql = require('mysql2/promise');
@@ -21,7 +19,7 @@ const COORDENADAS_CHILOE = {
 };
 
 async function main() {
-  console.log('🚀 Iniciando proceso de geocodificación...\n');
+  console.log('Iniciando proceso de geocodificación...\n');
 
   // Conectar a MySQL
   const connection = await mysql.createConnection({
@@ -31,30 +29,29 @@ async function main() {
     database: 'diprochil'
   });
 
-  console.log('✅ Conectado a la base de datos\n');
+  console.log('Conectado a la base de datos\n');
 
   try {
     // Ver estado inicial
     const [initialCount] = await connection.execute(
       'SELECT COUNT(*) as total, COUNT(latitud) as con_coordenadas FROM Client'
     );
-    console.log('📊 Estado inicial:');
-    console.log(`   Total clientes: ${initialCount[0].total}`);
-    console.log(`   Con coordenadas: ${initialCount[0].con_coordenadas}`);
-    console.log(`   Sin coordenadas: ${initialCount[0].total - initialCount[0].con_coordenadas}\n`);
+    console.log('Estado inicial:');
+    console.log(`Total clientes: ${initialCount[0].total}`);
+    console.log(`Con coordenadas: ${initialCount[0].con_coordenadas}`);
+    console.log(`Sin coordenadas: ${initialCount[0].total - initialCount[0].con_coordenadas}\n`);
 
     // Obtener todos los clientes
     const [clientes] = await connection.execute(
       'SELECT id, razonSocial, comuna, latitud, longitud FROM Client'
     );
 
-    console.log('🔄 Procesando clientes...\n');
+    console.log('Procesando clientes...\n');
 
     let actualizados = 0;
     let errores = 0;
 
     for (const cliente of clientes) {
-      // Si ya tiene coordenadas, saltar
       if (cliente.latitud && cliente.longitud) {
         continue;
       }
@@ -87,11 +84,11 @@ async function main() {
         );
 
         actualizados++;
-        console.log(`✅ ${actualizados}/${clientes.length} - ${cliente.razonSocial} (${cliente.comuna})`);
+        console.log(`${actualizados}/${clientes.length} - ${cliente.razonSocial} (${cliente.comuna})`);
 
       } catch (error) {
         errores++;
-        console.error(`❌ Error con ${cliente.razonSocial}:`, error.message);
+        console.error(`Error con ${cliente.razonSocial}:`, error.message);
       }
     }
 
@@ -100,15 +97,15 @@ async function main() {
     const [finalCount] = await connection.execute(
       'SELECT COUNT(*) as total, COUNT(latitud) as con_coordenadas FROM Client'
     );
-    console.log('📊 Estado final:');
-    console.log(`   Total clientes: ${finalCount[0].total}`);
-    console.log(`   Con coordenadas: ${finalCount[0].con_coordenadas}`);
-    console.log(`   Actualizados ahora: ${actualizados}`);
-    console.log(`   Errores: ${errores}`);
+    console.log('Estado final:');
+    console.log(`Total clientes: ${finalCount[0].total}`);
+    console.log(`Con coordenadas: ${finalCount[0].con_coordenadas}`);
+    console.log(`Actualizados ahora: ${actualizados}`);
+    console.log(`Errores: ${errores}`);
     console.log('='.repeat(60));
 
     // Ver distribución por comuna
-    console.log('\n📍 Distribución por comuna:');
+    console.log('\n Distribución por comuna:');
     const [distribucion] = await connection.execute(`
       SELECT 
         comuna,
@@ -124,14 +121,14 @@ async function main() {
       console.log(`   ${row.comuna}: ${row.con_coordenadas}/${row.total}`);
     });
 
-    console.log('\n✅ Proceso completado exitosamente!');
-    console.log('💡 Recarga la página de clientes para ver el mapa actualizado\n');
+    console.log('\n Proceso completado exitosamente!');
+    console.log('Recarga la página de clientes para ver el mapa actualizado\n');
 
   } catch (error) {
-    console.error('❌ Error general:', error);
+    console.error('Error general:', error);
   } finally {
     await connection.end();
-    console.log('🔌 Conexión cerrada');
+    console.log(' Conexión cerrada');
   }
 }
 

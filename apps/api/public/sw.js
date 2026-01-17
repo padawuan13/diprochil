@@ -1,4 +1,4 @@
-/* DIPROCHIL PWA Service Worker (safe: no API caching) */
+/* DIPROCHIL PWA */
 
 const CACHE_NAME = 'diprochil-static-v1';
 const CORE_ASSETS = [
@@ -40,13 +40,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache API calls
   if (API_PREFIXES.some((p) => url.pathname.startsWith(p))) {
     event.respondWith(fetch(req));
     return;
   }
 
-  // Navigations: network first, fallback to cached index
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
@@ -60,7 +58,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;

@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import ExcelJS from "exceljs";
 import { prisma } from "../../lib/prisma"; 
 
-// ==========================
 // Exportar pedidos vencidos
-// ==========================
 export const exportPedidos = async (req: Request, res: Response) => {
   try {
     const pedidos = await prisma.pedido.findMany({
@@ -62,9 +60,7 @@ export const exportPedidos = async (req: Request, res: Response) => {
   }
 };
 
-// ==========================
 // Exportar rutas finalizadas
-// ==========================
 export const exportRutas = async (req: Request, res: Response) => {
   try {
     const rutas = await prisma.route.findMany({

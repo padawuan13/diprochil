@@ -3,13 +3,15 @@ import { prisma } from "../lib/prisma";
 
 export const healthRouter = Router();
 
-healthRouter.get("/health", async (_req, res) => {
-  await prisma.$queryRaw`SELECT 1`;
+healthRouter.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true });
+});
 
-  res.json({
-    ok: true,
-    service: "diprochil-api",
-    db: "ok",
-    timestamp: new Date().toISOString(),
-  });
+healthRouter.get("/ready", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ ok: true, db: "up" });
+  } catch {
+    res.status(200).json({ ok: true, db: "down" }); 
+  }
 });

@@ -1,8 +1,5 @@
 /* ========================================
    RUTAS.JS - Gestión de Rutas (sin creación manual)
-   - Se muestran PROGRAMADAS por defecto (desde el <select> en rutas.html)
-   - Sin checkbox "mostrar finalizadas"
-   - Sin botón / modal "nueva ruta" (las rutas se crean al importar pedidos)
    ======================================== */
 
 const Rutas = {
@@ -34,17 +31,17 @@ const Rutas = {
   },
 
   async cargarRutas() {
-    console.log('🔄 Cargando rutas...');
+    console.log('Cargando rutas...');
     try {
       const response = await API.get(CONFIG.ENDPOINTS.ROUTES, { take: 200 });
 
       this.rutas = response.items || [];
       this.rutas.sort((a, b) => b.id - a.id);
 
-      console.log('✅ Rutas cargadas:', this.rutas.length);
+      console.log('Rutas cargadas:', this.rutas.length);
       this.filtrarRutas();
     } catch (error) {
-      console.error('❌ Error al cargar rutas:', error);
+      console.error('Error al cargar rutas:', error);
       UI.showError('Error al cargar las rutas');
       const container = document.getElementById('rutasTableContainer');
       if (container) container.innerHTML = '<p class="text-center text-danger">Error al cargar rutas</p>';

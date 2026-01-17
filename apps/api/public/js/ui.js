@@ -154,13 +154,11 @@ const UI = {
   },
 
   /**
-   * Formatear fecha (YYYY-MM-DD a DD/MM/YYYY)
-   * Usa UTC para evitar problemas de timezone donde la fecha aparece un día antes
+   * Formatea fecha (YYYY-MM-DD a DD/MM/YYYY)
    */
   formatDate(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    // Usar UTC para evitar que Chile (UTC-3/-4) muestre el día anterior
     const day = String(date.getUTCDate()).padStart(2, '0');
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const year = date.getUTCFullYear();
@@ -168,13 +166,12 @@ const UI = {
   },
 
   /**
-   * Formatear fecha y hora (usa hora local para mostrar correctamente)
+   * Formatea fecha y hora (usa hora local para mostrar correctamente)
    */
   formatDateTime(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
     const formattedDate = this.formatDate(dateString);
-    // La hora sí la mostramos en local
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${formattedDate} ${hours}:${minutes}`;
@@ -277,7 +274,7 @@ const UI = {
   },
 
   /**
-   * Confirmar acción (usar confirm nativo por ahora)
+   * Confirmar acción del usuario
    */
   confirm(message) {
     return window.confirm(message);

@@ -120,9 +120,9 @@ const Clientes = {
         maxZoom: 18,
       }).addTo(this.mainMap);
 
-      console.log('✅ Mapa principal inicializado correctamente');
+      console.log('Mapa principal inicializado correctamente');
     } catch (error) {
-      console.error('❌ Error al inicializar mapa principal:', error);
+      console.error('Error al inicializar mapa principal:', error);
     }
   },
 
@@ -173,7 +173,7 @@ const Clientes = {
       this.mainMap.fitBounds(group.getBounds().pad(0.1));
     }
 
-    console.log(`📍 Mapa actualizado: ${withGeo} con ubicación, ${withoutGeo} sin ubicación`);
+    console.log(`Mapa actualizado: ${withGeo} con ubicación, ${withoutGeo} sin ubicación`);
   },
 
   /**
@@ -224,9 +224,9 @@ const Clientes = {
         this.setUbicacionModal(e.latlng.lat, e.latlng.lng);
       });
 
-      console.log('✅ Mapa del modal inicializado correctamente');
+      console.log('Mapa del modal inicializado correctamente');
     } catch (error) {
-      console.error('❌ Error al inicializar mapa del modal:', error);
+      console.error('Error al inicializar mapa del modal:', error);
     }
   },
 
@@ -330,24 +330,24 @@ const Clientes = {
    * Cargar clientes desde el API
    */
   async cargarClientes() {
-    console.log('🔄 Cargando clientes...');
+    console.log('Cargando clientes...');
     try {
       const response = await API.get(CONFIG.ENDPOINTS.CLIENTS, {
         take: 1000,
         skip: 0,
       });
-      console.log('📊 Respuesta del API:', response);
-      console.log('📋 Total de clientes en BD:', response.total);
-      console.log('📦 Clientes cargados:', response.items?.length);
+      console.log('Respuesta del API:', response);
+      console.log('Total de clientes en BD:', response.total);
+      console.log('Clientes cargados:', response.items?.length);
       
       this.clientes = response.items || [];
       this.clientes.sort((a, b) => b.id - a.id);
       
-      console.log('✅ Clientes listos para mostrar');
+      console.log('Clientes listos para mostrar');
       this.renderizarTabla(this.clientes);
       this.updateMainMapMarkers(this.clientes);
     } catch (error) {
-      console.error('❌ Error al cargar clientes:', error);
+      console.error('Error al cargar clientes:', error);
       UI.showError('Error al cargar los clientes');
       document.getElementById('clientesTableContainer').innerHTML = 
         '<p class="text-center text-danger">Error al cargar clientes</p>';
@@ -437,10 +437,10 @@ const Clientes = {
    * Filtrar clientes por búsqueda
    */
   filtrarClientes(termino) {
-    console.log('🔍 Buscando:', termino);
+    console.log('Buscando:', termino);
     
     if (!termino || termino.trim() === '') {
-      console.log('📋 Mostrando todos los clientes:', this.clientes.length);
+      console.log('Mostrando todos los clientes:', this.clientes.length);
       this.renderizarTabla(this.clientes);
       this.updateMainMapMarkers(this.clientes);
       return;
@@ -457,7 +457,7 @@ const Clientes = {
       return coincideRazonSocial || coincideRUT || coincideComuna || coincideCiudad || coincideDireccion;
     });
 
-    console.log('✅ Clientes encontrados:', filtrados.length);
+    console.log('Clientes encontrados:', filtrados.length);
     this.renderizarTabla(filtrados);
     this.updateMainMapMarkers(filtrados);
   },
@@ -532,7 +532,7 @@ const Clientes = {
    * Guardar cliente (crear o actualizar)
    */
   async guardarCliente() {
-    console.log('🔵 Iniciando guardarCliente()...');
+    console.log('Iniciando guardarCliente()...');
 
     document.getElementById('modalMessage').innerHTML = '';
 
@@ -553,7 +553,7 @@ const Clientes = {
     const latitud = document.getElementById('latitud').value;
     const longitud = document.getElementById('longitud').value;
 
-    console.log('📋 Valores capturados:', {
+    console.log('Valores capturados:', {
       rutFormateado,
       razonSocial,
       comuna,
@@ -562,7 +562,6 @@ const Clientes = {
       longitud
     });
 
-    // Validaciones
     let hasErrors = false;
 
     if (!rutFormateado) {
@@ -589,13 +588,13 @@ const Clientes = {
     }
 
     if (hasErrors) {
-      console.log('❌ Errores de validación detectados');
+      console.log('Errores de validación detectados');
       document.getElementById('modalMessage').innerHTML = 
         '<div class="alert alert-danger">Por favor, completa todos los campos requeridos correctamente</div>';
       return;
     }
 
-    console.log('✅ Validaciones pasadas');
+    console.log('Validaciones pasadas');
 
     const rutNormalizado = rutFormateado
       .replace(/\./g, '')
@@ -621,7 +620,7 @@ const Clientes = {
     if (latitud) data.latitud = parseFloat(latitud);
     if (longitud) data.longitud = parseFloat(longitud);
 
-    console.log('📤 Datos a enviar:', data);
+    console.log('Datos a enviar:', data);
 
     const btnGuardar = document.getElementById('btnGuardar');
     UI.setButtonLoading(btnGuardar, true);
@@ -630,14 +629,14 @@ const Clientes = {
       let response;
       
       if (id) {
-        console.log(`🔄 Actualizando cliente ID: ${id}`);
+        console.log(`Actualizando cliente ID: ${id}`);
         response = await API.patch(`${CONFIG.ENDPOINTS.CLIENTS}/${id}`, data);
       } else {
-        console.log('➕ Creando nuevo cliente');
+        console.log('Creando nuevo cliente');
         response = await API.post(CONFIG.ENDPOINTS.CLIENTS, data);
       }
 
-      console.log('✅ Respuesta del servidor:', response);
+      console.log('Respuesta del servidor:', response);
 
       document.getElementById('modalMessage').innerHTML =
         `<div class="alert alert-success">${id ? 'Cliente actualizado' : 'Cliente creado'} correctamente</div>`;
@@ -649,7 +648,7 @@ const Clientes = {
       }, 1000);
 
     } catch (error) {
-      console.error('❌ Error al guardar cliente:', error);
+      console.error('Error al guardar cliente:', error);
       document.getElementById('modalMessage').innerHTML = 
         `<div class="alert alert-danger">${error.message || 'Error al guardar el cliente'}</div>`;
     } finally {
@@ -793,7 +792,6 @@ const Clientes = {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // Mostrar resumen final
     document.getElementById('geoMessage').innerHTML = `
       <div style="padding: 16px; background: ${resultados.exitosos > 0 ? '#d1fae5' : '#fee2e2'}; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid ${resultados.exitosos > 0 ? '#10b981' : '#ef4444'};">
         <strong>Geocodificación completada</strong><br>

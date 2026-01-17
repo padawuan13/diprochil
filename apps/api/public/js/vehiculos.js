@@ -18,12 +18,10 @@ const Vehiculos = {
    * Configurar event listeners
    */
   setupEventListeners() {
-    // Botón nuevo vehículo
     document.getElementById('btnNuevoVehiculo').addEventListener('click', () => {
       this.abrirModal();
     });
 
-    // Cerrar modal
     document.getElementById('btnCerrarModal').addEventListener('click', () => {
       this.cerrarModal();
     });
@@ -32,23 +30,19 @@ const Vehiculos = {
       this.cerrarModal();
     });
 
-    // Submit formulario
     document.getElementById('formVehiculo').addEventListener('submit', (e) => {
       e.preventDefault();
       this.guardarVehiculo();
     });
 
-    // Búsqueda en tiempo real
     document.getElementById('searchInput').addEventListener('input', (e) => {
       this.filtrarVehiculos();
     });
 
-    // Filtro por estado
     document.getElementById('filterEstado').addEventListener('change', (e) => {
       this.filtrarVehiculos();
     });
 
-    // Auto-mayúsculas en patente
     document.getElementById('patente').addEventListener('input', (e) => {
       e.target.value = e.target.value.toUpperCase();
     });
@@ -58,26 +52,25 @@ const Vehiculos = {
    * Cargar vehículos desde el API
    */
   async cargarVehiculos() {
-    console.log('🔄 Cargando vehículos...');
+    console.log('Cargando vehículos...');
     try {
       const response = await API.get(CONFIG.ENDPOINTS.VEHICLES, { 
-        take: 200, // ✅ Aumentado a 200
+        take: 200, 
         skip: 0,
       });
       
-      console.log('📊 Respuesta del API:', response);
-      console.log('📋 Total de vehículos en BD:', response.total);
-      console.log('🚐 Vehículos cargados:', response.items?.length);
+      console.log('Respuesta del API:', response);
+      console.log('Total de vehículos en BD:', response.total);
+      console.log('Vehículos cargados:', response.items?.length);
       
       this.vehiculos = response.items || [];
       
-      // Ordenar por ID descendente (más recientes primero)
       this.vehiculos.sort((a, b) => b.id - a.id);
       
-      console.log('✅ Vehículos listos para mostrar');
+      console.log('Vehículos listos para mostrar');
       this.renderizarTabla(this.vehiculos);
     } catch (error) {
-      console.error('❌ Error al cargar vehículos:', error);
+      console.error('Error al cargar vehículos:', error);
       UI.showError('Error al cargar los vehículos');
       document.getElementById('vehiculosTableContainer').innerHTML = 
         '<p class="text-center text-danger">Error al cargar vehículos</p>';
@@ -165,16 +158,14 @@ const Vehiculos = {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
     const estadoFilter = document.getElementById('filterEstado').value;
 
-    console.log('🔍 Filtrando:', { searchTerm, estadoFilter });
+    console.log('Filtrando:', { searchTerm, estadoFilter });
 
     let filtrados = [...this.vehiculos];
 
-    // Filtrar por estado
     if (estadoFilter) {
       filtrados = filtrados.filter(v => v.estado === estadoFilter);
     }
 
-    // Filtrar por búsqueda
     if (searchTerm) {
       filtrados = filtrados.filter(v => {
         const coincidePatente = v.patente?.toLowerCase().includes(searchTerm);
@@ -183,7 +174,7 @@ const Vehiculos = {
       });
     }
 
-    console.log('✅ Vehículos filtrados:', filtrados.length);
+    console.log('Vehículos filtrados:', filtrados.length);
     this.renderizarTabla(filtrados);
   },
 
@@ -197,13 +188,11 @@ const Vehiculos = {
     const form = document.getElementById('formVehiculo');
     const estadoGroup = document.getElementById('estadoGroup');
 
-    // Limpiar formulario y mensajes
     form.reset();
     document.getElementById('modalMessage').innerHTML = '';
     UI.clearForm('formVehiculo');
 
     if (vehiculo) {
-      // EDITAR
       title.textContent = 'Editar Vehículo';
       document.getElementById('vehiculoId').value = vehiculo.id;
       document.getElementById('patente').value = vehiculo.patente;
@@ -212,14 +201,11 @@ const Vehiculos = {
       document.getElementById('observaciones').value = vehiculo.observaciones || '';
       document.getElementById('estado').value = vehiculo.estado;
       
-      // Mostrar selector de estado al editar
       estadoGroup.style.display = 'block';
     } else {
-      // CREAR
       title.textContent = 'Nuevo Vehículo';
       document.getElementById('vehiculoId').value = '';
       
-      // Ocultar selector de estado al crear (siempre será ACTIVO)
       estadoGroup.style.display = 'none';
     }
 
@@ -235,7 +221,7 @@ const Vehiculos = {
   },
 
   /**
-   * Editar vehículo (abrir modal con datos)
+   * Editar vehículo 
    */
   editarVehiculo(id) {
     const vehiculo = this.vehiculos.find(v => v.id === id);
@@ -248,16 +234,14 @@ const Vehiculos = {
    * Guardar vehículo (crear o actualizar)
    */
   async guardarVehiculo() {
-    console.log('🔵 Iniciando guardarVehiculo()...');
+    console.log('Iniciando guardarVehiculo()...');
 
-    // Limpiar mensajes previos
     document.getElementById('modalMessage').innerHTML = '';
     const allErrors = document.querySelectorAll('.form-error');
     allErrors.forEach(el => el.textContent = '');
     const allInputsWithError = document.querySelectorAll('.form-input.error, .form-select.error');
     allInputsWithError.forEach(el => el.classList.remove('error'));
 
-    // Obtener valores
     const id = document.getElementById('vehiculoId').value;
     const patente = document.getElementById('patente').value.trim().toUpperCase();
     const tipo = document.getElementById('tipo').value;
@@ -265,14 +249,13 @@ const Vehiculos = {
     const observaciones = document.getElementById('observaciones').value.trim();
     const estado = document.getElementById('estado').value;
 
-    console.log('📋 Valores capturados:', {
+    console.log('Valores capturados:', {
       patente,
       tipo,
       capacidadKg,
       estado,
     });
 
-    // Validaciones
     let hasErrors = false;
 
     if (!patente) {
@@ -284,15 +267,14 @@ const Vehiculos = {
     }
 
     if (hasErrors) {
-      console.log('❌ Errores de validación detectados');
+      console.log('Errores de validación detectados');
       document.getElementById('modalMessage').innerHTML = 
         '<div class="alert alert-danger">Por favor, completa todos los campos requeridos correctamente</div>';
       return;
     }
 
-    console.log('✅ Validaciones pasadas');
+    console.log('Validaciones pasadas');
 
-    // Preparar datos
     const data = {
       patente,
     };
@@ -300,9 +282,9 @@ const Vehiculos = {
     if (tipo) data.tipo = tipo;
     if (capacidadKg) data.capacidadKg = parseInt(capacidadKg);
     if (observaciones) data.observaciones = observaciones;
-    if (id) data.estado = estado; // Solo enviar estado al editar
+    if (id) data.estado = estado; 
 
-    console.log('📤 Datos a enviar:', data);
+    console.log('Datos a enviar:', data);
 
     const btnGuardar = document.getElementById('btnGuardar');
     UI.setButtonLoading(btnGuardar, true);
@@ -311,28 +293,26 @@ const Vehiculos = {
       let response;
       
       if (id) {
-        console.log(`🔄 Actualizando vehículo ID: ${id}`);
+        console.log(`Actualizando vehículo ID: ${id}`);
         response = await API.patch(`${CONFIG.ENDPOINTS.VEHICLES}/${id}`, data);
       } else {
-        console.log('➕ Creando nuevo vehículo');
+        console.log('Creando nuevo vehículo');
         response = await API.post(CONFIG.ENDPOINTS.VEHICLES, data);
       }
 
-      console.log('✅ Respuesta del servidor:', response);
+      console.log('Respuesta del servidor:', response);
 
       document.getElementById('modalMessage').innerHTML = 
         `<div class="alert alert-success">${id ? 'Vehículo actualizado' : 'Vehículo creado'} correctamente</div>`;
 
-      // Recargar tabla
       await this.cargarVehiculos();
 
-      // Cerrar modal después de 1 segundo
       setTimeout(() => {
         this.cerrarModal();
       }, 1000);
 
     } catch (error) {
-      console.error('❌ Error al guardar vehículo:', error);
+      console.error('Error al guardar vehículo:', error);
       document.getElementById('modalMessage').innerHTML = 
         `<div class="alert alert-danger">${error.message || 'Error al guardar el vehículo'}</div>`;
     } finally {
@@ -359,7 +339,6 @@ const Vehiculos = {
         estado: nuevoEstado
       });
 
-      // Recargar tabla
       await this.cargarVehiculos();
 
       UI.showSuccess(`Vehículo marcado como ${estadoTexto}`);

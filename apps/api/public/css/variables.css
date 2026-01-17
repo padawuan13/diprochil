@@ -45,13 +45,13 @@
 
   /* TIPOGRAFÍA */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-xs: 0.75rem;    
+  --font-size-sm: 0.875rem;   
+  --font-size-base: 1rem;     
+  --font-size-lg: 1.125rem;   
+  --font-size-xl: 1.25rem;    
+  --font-size-2xl: 1.5rem;    
+  --font-size-3xl: 1.875rem;  
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -59,22 +59,22 @@
   --font-weight-bold: 700;
 
   /* ESPACIADOS */
-  --spacing-1: 0.25rem;   /* 4px */
-  --spacing-2: 0.5rem;    /* 8px */
-  --spacing-3: 0.75rem;   /* 12px */
-  --spacing-4: 1rem;      /* 16px */
-  --spacing-5: 1.25rem;   /* 20px */
-  --spacing-6: 1.5rem;    /* 24px */
-  --spacing-8: 2rem;      /* 32px */
-  --spacing-10: 2.5rem;   /* 40px */
-  --spacing-12: 3rem;     /* 48px */
-  --spacing-16: 4rem;     /* 64px */
+  --spacing-1: 0.25rem;   
+  --spacing-2: 0.5rem;    
+  --spacing-3: 0.75rem;   
+  --spacing-4: 1rem;      
+  --spacing-5: 1.25rem;   
+  --spacing-6: 1.5rem;   
+  --spacing-8: 2rem;      
+  --spacing-10: 2.5rem;   
+  --spacing-12: 3rem;     
+  --spacing-16: 4rem;     
 
   /* BORDES */
-  --border-radius-sm: 0.25rem;  /* 4px */
-  --border-radius: 0.5rem;      /* 8px */
-  --border-radius-lg: 0.75rem;  /* 12px */
-  --border-radius-xl: 1rem;     /* 16px */
+  --border-radius-sm: 0.25rem;  
+  --border-radius: 0.5rem;      
+  --border-radius-lg: 0.75rem; 
+  --border-radius-xl: 1rem;     
   --border-radius-full: 9999px;
 
   --border-width: 1px;

@@ -3,18 +3,13 @@
    ======================================== */
 
 const API = {
-  /**
-   * Obtener el token de autenticación
-   * Busca en localStorage primero (sesion recordada) y luego en sessionStorage (sesion temporal)
-   */
+  
   getToken() {
     return localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN) ||
            sessionStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
   },
 
-  /**
-   * Construir headers con autenticación
-   */
+  
   getHeaders(includeAuth = true) {
     const headers = {
       'Content-Type': 'application/json',
@@ -32,26 +27,23 @@ const API = {
 
   /**
    * Manejar respuestas de la API
-   * @param {Response} response - Respuesta del fetch
-   * @param {boolean} isLoginRequest - Si es true, no redirige en caso de 401
+   * @param {Response} response 
+   * @param {boolean} isLoginRequest 
    */
   async handleResponse(response, isLoginRequest = false) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Si es 401 y NO es un request de login, el token expiró
       if (response.status === 401 && !isLoginRequest) {
         Auth.logout();
         window.location.href = 'index.html';
         throw new Error(CONFIG.ERROR_MESSAGES.UNAUTHORIZED);
       }
 
-      // Si es 403, no tiene permisos
       if (response.status === 403) {
         throw new Error(CONFIG.ERROR_MESSAGES.FORBIDDEN);
       }
 
-      // Lanzar error con mensaje del servidor o genérico
       throw new Error(data.message || CONFIG.ERROR_MESSAGES.SERVER_ERROR);
     }
 
@@ -63,7 +55,6 @@ const API = {
    */
   async get(endpoint, params = {}) {
     try {
-      // Construir query string
       const queryString = new URLSearchParams(params).toString();
       const url = `${CONFIG.API_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
 
@@ -81,9 +72,9 @@ const API = {
 
   /**
    * POST - Crear recursos
-   * @param {string} endpoint - URL del endpoint
-   * @param {object} body - Datos a enviar
-   * @param {boolean} includeAuth - Si incluir token de autenticación
+   * @param {string} endpoint 
+   * @param {object} body 
+   * @param {boolean} includeAuth 
    */
   async post(endpoint, body = {}, includeAuth = true) {
     try {
@@ -93,7 +84,6 @@ const API = {
         body: JSON.stringify(body),
       });
 
-      // Si es endpoint de login, no redirigir en caso de 401
       const isLoginRequest = endpoint.includes('/auth/login');
       return await this.handleResponse(response, isLoginRequest);
     } catch (error) {
@@ -156,5 +146,3 @@ const API = {
   },
 };
 
-// Exportar API (si usas módulos ES6)
-// export default API;

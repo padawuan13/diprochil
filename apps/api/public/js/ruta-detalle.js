@@ -35,7 +35,7 @@ const RutaDetalle = {
       return;
     }
 
-    console.log('📍 Ruta ID:', this.rutaId);
+    console.log('Ruta ID:', this.rutaId);
 
     await this.cargarRuta();
     await this.cargarPedidosPendientes();
@@ -84,11 +84,11 @@ const RutaDetalle = {
    * Cargar información de la ruta (con dashboard)
    */
   async cargarRuta() {
-    console.log('🔄 Cargando ruta...');
+    console.log('Cargando ruta...');
     try {
       const response = await API.get(`${CONFIG.ENDPOINTS.ROUTES}/${this.rutaId}/dashboard`);
       
-      console.log('📊 Dashboard de ruta:', response);
+      console.log('Dashboard de ruta:', response);
       
       this.ruta = response.item;
       
@@ -104,7 +104,7 @@ const RutaDetalle = {
       }
       
     } catch (error) {
-      console.error('❌ Error al cargar ruta:', error);
+      console.error('Error al cargar ruta:', error);
       UI.showError('Error al cargar la ruta');
       document.getElementById('rutaInfo').innerHTML = 
         '<p class="text-center text-danger">Error al cargar la ruta</p>';
@@ -142,7 +142,7 @@ const RutaDetalle = {
    * Cargar pedidos pendientes (sin asignar a ruta)
    */
   async cargarPedidosPendientes() {
-    console.log('🔄 Cargando pedidos pendientes...');
+    console.log('Cargando pedidos pendientes...');
     try {
       const take = 200;
       let skip = 0;
@@ -166,11 +166,11 @@ const RutaDetalle = {
       const pedidosEnRuta = this.ruta?.stops?.map(s => s.pedidoId) || [];
       this.pedidosPendientes = all.filter(p => !pedidosEnRuta.includes(p.id));
       
-      console.log('✅ Pedidos disponibles:', this.pedidosPendientes.length);
+      console.log('Pedidos disponibles:', this.pedidosPendientes.length);
       
       this.llenarDropdownPedidos();
     } catch (error) {
-      console.error('❌ Error al cargar pedidos:', error);
+      console.error('Error al cargar pedidos:', error);
       this.pedidosPendientes = [];
     }
   },
@@ -398,7 +398,7 @@ const RutaDetalle = {
    * Agregar parada
    */
   async agregarParada() {
-    console.log('🔵 Agregando parada...');
+    console.log('Agregando parada...');
 
     document.getElementById('modalParadaMessage').innerHTML = '';
     const allErrors = document.querySelectorAll('.form-error');
@@ -426,7 +426,7 @@ const RutaDetalle = {
 
     if (horaEstimada) data.horaEstimada = horaEstimada;
 
-    console.log('📤 Datos de parada:', data);
+    console.log('Datos de parada:', data);
 
     const btnGuardar = document.getElementById('btnGuardarParada');
     UI.setButtonLoading(btnGuardar, true);
@@ -445,7 +445,7 @@ const RutaDetalle = {
       }, 1000);
 
     } catch (error) {
-      console.error('❌ Error al agregar parada:', error);
+      console.error('Error al agregar parada:', error);
       document.getElementById('modalParadaMessage').innerHTML = 
         `<div class="alert alert-danger">${error.message || 'Error al agregar la parada'}</div>`;
     } finally {
@@ -470,7 +470,7 @@ const RutaDetalle = {
       await this.cargarPedidosPendientes();
 
     } catch (error) {
-      console.error('❌ Error al eliminar parada:', error);
+      console.error('Error al eliminar parada:', error);
       UI.showError('Error al eliminar la parada');
     }
   },
@@ -483,7 +483,7 @@ const RutaDetalle = {
    * Optimizar ruta usando el backend
    */
   async optimizarRuta() {
-    console.log('🚀 Iniciando optimización...');
+    console.log('Iniciando optimización...');
 
     if (!this.ruta?.stops || this.ruta.stops.length < 2) {
       UI.showError('Se necesitan al menos 2 paradas para optimizar');
@@ -507,7 +507,7 @@ const RutaDetalle = {
 
       const response = await API.post('/routes/optimize', { pedidoIds });
 
-      console.log('✅ Optimización recibida:', response);
+      console.log('Optimización recibida:', response);
 
       if (!response.ok || !response.rutaOptimizada) {
         throw new Error('Error en la optimización');
@@ -522,12 +522,12 @@ const RutaDetalle = {
         puntos: response.rutaOptimizada.puntos
       };
 
-      console.log('📊 Datos de optimización procesados:', this.optimizationData);
+      console.log('Datos de optimización procesados:', this.optimizationData);
 
       this.mostrarResultadosOptimizacion();
 
     } catch (error) {
-      console.error('❌ Error al optimizar:', error);
+      console.error('Error al optimizar:', error);
       UI.showError('Error al optimizar la ruta: ' + error.message);
     } finally {
       UI.setButtonLoading(btnOptimizar, false);
@@ -633,7 +633,7 @@ const RutaDetalle = {
   },
 
   /**
-   * Previsualizar (toggle) el orden optimizado en el mapa
+   * Previsualizar el orden optimizado en el mapa
    */
   previsualizarOptimizacion() {
     if (!this.optimizationData?.ordenOptimizado?.length) {
@@ -734,7 +734,7 @@ const RutaDetalle = {
     UI.setButtonLoading(btnAplicar, true);
 
     try {
-      console.log('🔄 Paso 1: Asignando órdenes temporales...');
+      console.log('Paso 1: Asignando órdenes temporales...');
       for (let i = 0; i < this.ruta.stops.length; i++) {
         const parada = this.ruta.stops[i];
         await API.patch(`${CONFIG.ENDPOINTS.ROUTES}/${this.rutaId}/stops/${parada.id}`, {
@@ -742,9 +742,9 @@ const RutaDetalle = {
         });
       }
 
-      console.log('✅ Paso 1 completado');
+      console.log('Paso 1 completado');
 
-      console.log('🔄 Paso 2: Aplicando orden optimizado...');
+      console.log('Paso 2: Aplicando orden optimizado...');
       for (let i = 0; i < this.optimizationData.ordenOptimizado.length; i++) {
         const pedidoId = this.optimizationData.ordenOptimizado[i];
         const parada = this.ruta.stops.find(s => s.pedidoId === pedidoId);
@@ -756,7 +756,7 @@ const RutaDetalle = {
         }
       }
 
-      console.log('✅ Paso 2 completado');
+      console.log('Paso 2 completado');
 
       UI.showSuccess('Orden optimizado aplicado correctamente');
 
@@ -777,7 +777,7 @@ const RutaDetalle = {
       if (btnCancel) btnCancel.disabled = true;
 
     } catch (error) {
-      console.error('❌ Error al aplicar optimización:', error);
+      console.error('Error al aplicar optimización:', error);
       UI.showError('Error al aplicar la optimización: ' + error.message);
     } finally {
       UI.setButtonLoading(btnAplicar, false);
@@ -817,7 +817,7 @@ const RutaDetalle = {
    * Reportar incidencia
    */
   async reportarIncidencia() {
-    console.log('🚨 Reportando incidencia...');
+    console.log('Reportando incidencia...');
 
     document.getElementById('modalIncidenciaMessage').innerHTML = '';
 
@@ -856,7 +856,7 @@ const RutaDetalle = {
       }, 1500);
 
     } catch (error) {
-      console.error('❌ Error al reportar incidencia:', error);
+      console.error('Error al reportar incidencia:', error);
       const mensaje = error.message || 'Error al reportar incidencia';
       document.getElementById('modalIncidenciaMessage').innerHTML =
         `<div class="alert alert-danger">${mensaje}</div>`;
@@ -945,7 +945,7 @@ const RutaDetalle = {
       await this.cargarRuta();
 
     } catch (error) {
-      console.error('❌ Error al cambiar estado:', error);
+      console.error('Error al cambiar estado:', error);
       const mensaje = error?.message || 'Error al cambiar el estado de la parada';
       UI.showAlert(mensaje, 'error');
     }
@@ -978,7 +978,7 @@ const RutaDetalle = {
         const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
         window.open(url, '_blank');
       } catch (e) {
-        console.error('❌ Error al abrir navegación:', e);
+        console.error('Error al abrir navegación:', e);
         UI.showError('No se pudo abrir la navegación');
       }
     }

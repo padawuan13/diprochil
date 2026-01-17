@@ -581,8 +581,7 @@
       reader.onload = function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          // Nota: XLSX NO calcula fórmulas. Pero al guardar normal en Excel,
-          // el archivo suele incluir el resultado "cacheado" y eso sí se puede leer.
+
           const workbook = XLSX.read(data, { type: 'array' });
           
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -596,7 +595,6 @@
           excelData = jsonData;
           columnNames = Object.keys(jsonData[0]);
           
-          // Actualizar UI
           document.getElementById('fileLabel').classList.add('has-file');
           document.getElementById('fileLabel').innerHTML = `
             <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
@@ -627,7 +625,7 @@
       
       previewSection.style.display = 'block';
 
-      const preview = excelData.slice(0, 5); // Primeras 5 filas
+      const preview = excelData.slice(0, 5); // Mostrar solo las primeras 5 filas
       
       let html = '<table class="preview-table"><thead><tr>';
       columnNames.forEach(col => {
@@ -653,7 +651,6 @@
       const mappingSection = document.getElementById('mappingSection');
       mappingSection.style.display = 'block';
 
-      // Llenar todos los selects
       const selects = ['colRut', 'colRazonSocial', 'colDireccion', 'colComuna', 'colCiudad', 'colTelefono', 'colGiro'];
       
       selects.forEach(selectId => {
@@ -664,7 +661,6 @@
           select.innerHTML += `<option value="${col}">${col}</option>`;
         });
 
-        // Auto-detectar columnas comunes
         const autoDetect = {
           'colRut': ['rutcliente', 'rut', 'RUT', 'Rut'],
           'colRazonSocial': ['razonsocial', 'razon social', 'razón social', 'nombre', 'empresa', 'razonSocial'],
@@ -690,7 +686,6 @@
 
     async function geocodificarDireccion(direccion, comuna, ciudad, intentos = 3) {
       try {
-        // Construir query de búsqueda
         const searchQuery = `${direccion}, ${comuna}, ${ciudad}, Chiloé, Chile`;
         
         // Usar Nominatim (OpenStreetMap)
@@ -712,7 +707,6 @@
           };
         }
 
-        // Si no encuentra, intentar solo con comuna
         const fallbackQuery = `${comuna}, Chiloé, Chile`;
         const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackQuery)}&limit=1`;
         
@@ -725,14 +719,13 @@
         const fallbackData = await fallbackResponse.json();
         
         if (fallbackData && fallbackData.length > 0) {
-          // Agregar variación aleatoria
           const latVariacion = (Math.random() - 0.5) * 0.01;
           const lngVariacion = (Math.random() - 0.5) * 0.01;
           
           return {
             latitud: parseFloat(fallbackData[0].lat) + latVariacion,
             longitud: parseFloat(fallbackData[0].lon) + lngVariacion,
-            found: false // Indica que usó fallback
+            found: false 
           };
         }
 
@@ -741,10 +734,9 @@
       } catch (error) {
         console.error('Error geocodificando:', error);
         
-        // Si es error de red y quedan reintentos, intentar de nuevo
         if (error.message.includes('Failed to fetch') && intentos > 1) {
-          log(`⚠️  Error de red, reintentando... (${4 - intentos}/3)`, 'warning');
-          await new Promise(resolve => setTimeout(resolve, 3000)); // Esperar 3 segundos
+          log(`Error de red, reintentando... (${4 - intentos}/3)`, 'warning');
+          await new Promise(resolve => setTimeout(resolve, 3000)); 
           return geocodificarDireccion(direccion, comuna, ciudad, intentos - 1);
         }
         
@@ -759,7 +751,7 @@
       const password = document.getElementById('password').value;
 
       const loginUrl = GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.LOGIN;
-      log(`🔗 Intentando conectar a: ${loginUrl}`, 'info');
+      log(`Intentando conectar a: ${loginUrl}`, 'info');
 
       try {
         const response = await fetch(loginUrl, {
@@ -770,7 +762,7 @@
 
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error(`❌ Endpoint no encontrado: ${loginUrl}\n\n💡 Verifica la configuración de rutas en el backend.`);
+            throw new Error(`Endpoint no encontrado: ${loginUrl}\n\n💡 Verifica la configuración de rutas en el backend.`);
           }
           if (response.status === 401) {
             throw new Error(`Credenciales incorrectas\n\n Verifica:\n- Email: ${email}\n- Contraseña\n- Que el usuario exista en la base de datos\n- Que tenga rol ADMIN`);
@@ -853,7 +845,6 @@
 
         skip += take;
 
-        // Seguridad: evitar loops infinitos si el backend no responde total
         if (rounds > 50) break;
         if (items.length < take && total === Infinity) break;
       }
@@ -871,9 +862,6 @@
 
     // ==================== PROCESAMIENTO PRINCIPAL ====================
 
-    // ==================== PROCESAMIENTO PRINCIPAL ====================
-
-    // Test de autenticación
     document.getElementById('btnTestAuth').addEventListener('click', async function() {
       const btn = this;
       const resultDiv = document.getElementById('authTestResult');
@@ -908,7 +896,6 @@
       btn.disabled = true;
       btn.textContent = '⏳ Validando...';
 
-      // Obtener mapeo de columnas
       const mapping = {
         rut: document.getElementById('colRut').value,
         razonSocial: document.getElementById('colRazonSocial').value,
@@ -919,7 +906,6 @@
         giro: document.getElementById('colGiro').value,
       };
 
-      // Validar que al menos RUT, razón social y dirección estén mapeados
       if (!mapping.rut || !mapping.razonSocial || !mapping.direccion) {
         alert('Debes mapear al menos RUT, Razón Social y Dirección');
         btn.disabled = false;
@@ -927,11 +913,9 @@
         return;
       }
 
-      // Mostrar sección de progreso
       document.getElementById('progressSection').style.display = 'block';
       setStep(3);
 
-      // Reset stats
       stats = {
         total: excelData.length,
         nuevos: 0,
@@ -944,23 +928,21 @@
       updateStats();
 
       try {
-        log('🔑 Conectando con el servidor...', 'info');
-        log(`📡 API Base: ${GEO_CONFIG.API_BASE}`, 'info');
-        log(`🔐 Login: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.LOGIN}`, 'info');
-        log(`📋 Clientes: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.CLIENTS}`, 'info');
+        log('Conectando con el servidor...', 'info');
+        log(`API Base: ${GEO_CONFIG.API_BASE}`, 'info');
+        log(`Login: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.LOGIN}`, 'info');
+        log(`Clientes: ${GEO_CONFIG.API_BASE + GEO_CONFIG.ENDPOINTS.CLIENTS}`, 'info');
 
         token = await obtenerToken();
-        log('✅ Autenticación exitosa', 'success');
+        log('Autenticación exitosa', 'success');
 
-        log(`📋 Procesando ${excelData.length} registros...`, 'info');
-        log('⏱️  Tiempo estimado: ' + Math.ceil(excelData.length * 1.2 / 60) + ' minutos', 'info');
+        log(`Procesando ${excelData.length} registros...`, 'info');
+        log('Tiempo estimado: ' + Math.ceil(excelData.length * 1.2 / 60) + ' minutos', 'info');
 
-        // Cargar clientes una sola vez (modo profesional)
-        log('📥 Cargando clientes existentes (cache)...', 'info');
+        log('Cargando clientes existentes (cache)...', 'info');
         const clientsMap = await fetchAllClientsMap();
-        log(`✅ Clientes cargados: ${clientsMap.size}`, 'success');
+        log(`Clientes cargados: ${clientsMap.size}`, 'success');
 
-        // Detección de duplicados en el Excel por RUT
         const seenRut = new Set();
 
         for (let i = 0; i < excelData.length; i++) {
@@ -976,7 +958,7 @@
             const giro = cleanText(row[mapping.giro]);
 
             if (!rut || !razonSocial) {
-              log(`⚠️  Fila ${i + 1}: RUT o Razón Social vacía - omitida`, 'warning');
+              log(`Fila ${i + 1}: RUT o Razón Social vacía - omitida`, 'warning');
               stats.errores++;
               updateStats();
               continue;
@@ -984,13 +966,12 @@
 
             const rutKey = normalizarRutKey(rut);
             if (!rutKey) {
-              log(`⚠️  Fila ${i + 1}: RUT inválido - omitida`, 'warning');
+              log(`Fila ${i + 1}: RUT inválido - omitida`, 'warning');
               stats.errores++;
               updateStats();
               continue;
             }
 
-            // Duplicados dentro del Excel
             if (seenRut.has(rutKey)) {
               stats.duplicados++;
               updateStats();
@@ -999,16 +980,14 @@
             }
             seenRut.add(rutKey);
 
-            // Dirección con fórmula sin resultado (caso raro)
             if (isFormulaString(direccion)) {
-              log(`⚠️  Fila ${i + 1}: La columna Dirección parece venir como fórmula sin valor calculado. Revisa que el Excel esté guardado con resultados.`, 'warning');
+              log(`Fila ${i + 1}: La columna Dirección parece venir como fórmula sin valor calculado. Revisa que el Excel esté guardado con resultados.`, 'warning');
             }
 
             const existente = clientsMap.get(rutKey) || null;
 
-            // Datos “limpios” desde Excel
             const excelPayload = {
-              rut: rut, // se guarda con guión tal cual, el backend lo recorta
+              rut: rut, 
               razonSocial,
               comuna,
               ciudad,
@@ -1017,7 +996,7 @@
               ...(giro ? { giro } : {}),
             };
 
-            // Determinar si se necesita geocodificación
+            // Determinar si necesita geocodificación
             const needGeo = Boolean(
               direccion && comuna && (
                 !existente ||
@@ -1030,26 +1009,24 @@
 
             let coordsToSave = null;
             if (needGeo) {
-              log(`📍 [${i + 1}/${excelData.length}] Geocodificando: ${razonSocial}...`, 'info');
+              log(`[${i + 1}/${excelData.length}] Geocodificando: ${razonSocial}...`, 'info');
               coordsToSave = await geocodificarDireccion(direccion, comuna, ciudad || 'Chiloé');
 
               if (coordsToSave) {
                 if (coordsToSave.found) {
-                  log(`✅ ${razonSocial}: Dirección exacta encontrada`, 'success');
+                  log(`${razonSocial}: Dirección exacta encontrada`, 'success');
                 } else {
-                  log(`⚡ ${razonSocial}: Ubicación aproximada (centro de ${comuna})`, 'warning');
+                  log(`${razonSocial}: Ubicación aproximada (centro de ${comuna})`, 'warning');
                 }
                 stats.geocodificados++;
                 updateStats();
               } else {
-                log(`⚠️  ${razonSocial}: No se pudo geocodificar`, 'warning');
+                log(`${razonSocial}: No se pudo geocodificar`, 'warning');
               }
 
-              // Respetar límite de Nominatim (1 request/segundo) + margen
               await new Promise(resolve => setTimeout(resolve, 1300));
             }
 
-            // Si existe: actualizar solo si cambió algo
             if (existente) {
               const diff = {};
               const compareFields = ['razonSocial', 'comuna', 'ciudad', 'direccion', 'telefono', 'giro'];
@@ -1069,26 +1046,23 @@
               if (!hasChanges) {
                 stats.sinCambios++;
                 updateStats();
-                log(`⏭️  ${razonSocial} (${rut}): sin cambios`, 'info');
+                log(`${razonSocial} (${rut}): sin cambios`, 'info');
                 continue;
               }
 
               await patchClient(existente.id, diff);
               stats.actualizados++;
               updateStats();
-              log(`✏️  ${i + 1}/${excelData.length} - ${razonSocial} actualizado`, 'success');
+              log(`${i + 1}/${excelData.length} - ${razonSocial} actualizado`, 'success');
 
-              // Mantener cache actualizado
               clientsMap.set(rutKey, { ...existente, ...diff });
               continue;
             }
 
-            // Si NO existe: crear
-            // Validar mínimos del backend
             if (!excelPayload.comuna || !excelPayload.ciudad) {
               stats.errores++;
               updateStats();
-              log(`❌ ${razonSocial} (${rut}): falta Comuna o Ciudad (requeridos).`, 'error');
+              log(`${razonSocial} (${rut}): falta Comuna o Ciudad (requeridos).`, 'error');
               continue;
             }
 
@@ -1107,48 +1081,47 @@
               const created = await createClient(createPayload);
               stats.nuevos++;
               updateStats();
-              log(`🆕 ${i + 1}/${excelData.length} - ${razonSocial} creado`, 'success');
+              log(`${i + 1}/${excelData.length} - ${razonSocial} creado`, 'success');
 
-              // Mantener cache actualizado
               const createdItem = created.item || created;
               if (createdItem?.rut) {
                 clientsMap.set(rutKey, createdItem);
               }
             } catch (err) {
-              // Conflicto por RUT único: tratar como existente y continuar
+              // Conflicto por RUT único tratar como existente y continuar
               if (err?.status === 409) {
                 stats.duplicados++;
                 updateStats();
-                log(`🧹 ${razonSocial} (${rut}): ya existe (conflicto). Se omite creación.`, 'warning');
+                log(`${razonSocial} (${rut}): ya existe (conflicto). Se omite creación.`, 'warning');
               } else {
                 throw err;
               }
             }
 
           } catch (error) {
-            log(`❌ Error en fila ${i + 1}: ${error.message}`, 'error');
+            log(`Error en fila ${i + 1}: ${error.message}`, 'error');
             stats.errores++;
             updateStats();
           }
         }
 
         log('\n' + '='.repeat(50), 'info');
-        log('📊 PROCESO COMPLETADO', 'info');
-        log(`🆕 Nuevos: ${stats.nuevos}`, 'success');
-        log(`✏️  Actualizados: ${stats.actualizados}`, 'success');
-        log(`⏭️  Sin cambios: ${stats.sinCambios}`, 'info');
-        log(`🧹 Duplicados (Excel): ${stats.duplicados}`, 'warning');
-        log(`📍 Geocodificados: ${stats.geocodificados}`, 'success');
-        log(`❌ Errores: ${stats.errores}`, 'error');
+        log('PROCESO COMPLETADO', 'info');
+        log(`Nuevos: ${stats.nuevos}`, 'success');
+        log(`Actualizados: ${stats.actualizados}`, 'success');
+        log(`Sin cambios: ${stats.sinCambios}`, 'info');
+        log(`Duplicados (Excel): ${stats.duplicados}`, 'warning');
+        log(`Geocodificados: ${stats.geocodificados}`, 'success');
+        log(`Errores: ${stats.errores}`, 'error');
         log('='.repeat(50), 'info');
-        log('\n💡 SIGUIENTE PASO: Recarga la página de clientes para ver el mapa actualizado', 'info');
+        log('\n SIGUIENTE PASO: Recarga la página de clientes para ver el mapa actualizado', 'info');
 
         renderSummary();
 
         btn.textContent = '✅ Proceso Completado';
 
       } catch (error) {
-        log(`❌ Error general: ${error.message}`, 'error');
+        log(`Error general: ${error.message}`, 'error');
         btn.disabled = false;
         btn.textContent = '❌ Error - Reintentar';
       }

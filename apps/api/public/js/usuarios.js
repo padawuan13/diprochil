@@ -18,12 +18,10 @@ const Usuarios = {
    * Configurar event listeners
    */
   setupEventListeners() {
-    // Botón nuevo usuario
     document.getElementById('btnNuevoUsuario').addEventListener('click', () => {
       this.abrirModal();
     });
 
-    // Cerrar modales
     document.getElementById('btnCerrarModal').addEventListener('click', () => {
       this.cerrarModal();
     });
@@ -40,7 +38,6 @@ const Usuarios = {
       this.cerrarModalPassword();
     });
 
-    // Submit formularios
     document.getElementById('formUsuario').addEventListener('submit', (e) => {
       e.preventDefault();
       this.guardarUsuario();
@@ -51,7 +48,6 @@ const Usuarios = {
       this.cambiarPassword();
     });
 
-    // Búsqueda y filtros
     document.getElementById('searchInput').addEventListener('input', () => {
       this.filtrarUsuarios();
     });
@@ -65,23 +61,22 @@ const Usuarios = {
    * Cargar usuarios desde el API
    */
   async cargarUsuarios() {
-    console.log('🔄 Cargando usuarios...');
+    console.log('Cargando usuarios...');
     try {
       const response = await API.get('/users', { take: 200 });
       
-      console.log('📊 Respuesta del API:', response);
-      console.log('📋 Total de usuarios:', response.total);
-      console.log('👥 Usuarios cargados:', response.items?.length);
+      console.log('Respuesta del API:', response);
+      console.log('Total de usuarios:', response.total);
+      console.log('Usuarios cargados:', response.items?.length);
       
       this.usuarios = response.items || [];
       
-      // Ordenar por ID descendente
       this.usuarios.sort((a, b) => b.id - a.id);
       
-      console.log('✅ Usuarios listos para mostrar');
+      console.log('Usuarios listos para mostrar');
       this.renderizarTabla(this.usuarios);
     } catch (error) {
-      console.error('❌ Error al cargar usuarios:', error);
+      console.error('Error al cargar usuarios:', error);
       UI.showError('Error al cargar los usuarios');
       document.getElementById('usuariosTableContainer').innerHTML = 
         '<p class="text-center text-danger">Error al cargar usuarios</p>';
@@ -183,12 +178,10 @@ const Usuarios = {
 
     let filtrados = [...this.usuarios];
 
-    // Filtrar por rol
     if (roleFilter) {
       filtrados = filtrados.filter(u => u.role === roleFilter);
     }
 
-    // Filtrar por búsqueda
     if (searchTerm) {
       filtrados = filtrados.filter(u => {
         const coincideNombre = u.nombre?.toLowerCase().includes(searchTerm);
@@ -217,7 +210,6 @@ const Usuarios = {
     UI.clearForm('formUsuario');
 
     if (usuario) {
-      // EDITAR
       title.textContent = 'Editar Usuario';
       document.getElementById('usuarioId').value = usuario.id;
       document.getElementById('nombre').value = usuario.nombre;
@@ -225,22 +217,18 @@ const Usuarios = {
       document.getElementById('role').value = usuario.role;
       document.getElementById('active').checked = usuario.active;
       
-      // Ocultar campo de contraseña al editar
       passwordGroup.style.display = 'none';
       passwordInput.required = false;
       
-      // Mostrar checkbox de activo
       activeGroup.style.display = 'block';
     } else {
-      // CREAR
+
       title.textContent = 'Nuevo Usuario';
       document.getElementById('usuarioId').value = '';
       
-      // Mostrar campo de contraseña al crear
       passwordGroup.style.display = 'block';
       passwordInput.required = true;
       
-      // Ocultar checkbox de activo
       activeGroup.style.display = 'none';
     }
 
@@ -269,7 +257,7 @@ const Usuarios = {
    * Guardar usuario
    */
   async guardarUsuario() {
-    console.log('🔵 Iniciando guardarUsuario()...');
+    console.log('Iniciando guardarUsuario()...');
 
     document.getElementById('modalMessage').innerHTML = '';
     const allErrors = document.querySelectorAll('.form-error');
@@ -282,7 +270,6 @@ const Usuarios = {
     const password = document.getElementById('password').value;
     const active = document.getElementById('active').checked;
 
-    // Validaciones
     let hasErrors = false;
 
     if (!nombre) {
@@ -321,14 +308,12 @@ const Usuarios = {
     };
 
     if (!id) {
-      // Solo al crear
       data.password = password;
     } else {
-      // Solo al editar
       data.active = active;
     }
 
-    console.log('📤 Datos a enviar:', data);
+    console.log('Datos a enviar:', data);
 
     const btnGuardar = document.getElementById('btnGuardar');
     UI.setButtonLoading(btnGuardar, true);
@@ -337,14 +322,14 @@ const Usuarios = {
       let response;
       
       if (id) {
-        console.log(`🔄 Actualizando usuario ID: ${id}`);
+        console.log(`Actualizando usuario ID: ${id}`);
         response = await API.patch(`/users/${id}`, data);
       } else {
-        console.log('➕ Creando nuevo usuario');
+        console.log('Creando nuevo usuario');
         response = await API.post('/users', data);
       }
 
-      console.log('✅ Respuesta del servidor:', response);
+      console.log('Respuesta del servidor:', response);
 
       document.getElementById('modalMessage').innerHTML = 
         `<div class="alert alert-success">${id ? 'Usuario actualizado' : 'Usuario creado'} correctamente</div>`;
@@ -356,7 +341,7 @@ const Usuarios = {
       }, 1000);
 
     } catch (error) {
-      console.error('❌ Error al guardar usuario:', error);
+      console.error('Error al guardar usuario:', error);
       document.getElementById('modalMessage').innerHTML = 
         `<div class="alert alert-danger">${error.message || 'Error al guardar el usuario'}</div>`;
     } finally {
@@ -390,7 +375,7 @@ const Usuarios = {
    * Cambiar contraseña
    */
   async cambiarPassword() {
-    console.log('🔵 Cambiando contraseña...');
+    console.log('Cambiando contraseña...');
 
     document.getElementById('modalPasswordMessage').innerHTML = '';
 
@@ -417,7 +402,7 @@ const Usuarios = {
       }, 1500);
 
     } catch (error) {
-      console.error('❌ Error al cambiar contraseña:', error);
+      console.error('Error al cambiar contraseña:', error);
       document.getElementById('modalPasswordMessage').innerHTML = 
         `<div class="alert alert-danger">${error.message || 'Error al cambiar la contraseña'}</div>`;
     } finally {
